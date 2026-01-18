@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/mikepea/shorty/pkg/shorty/database"
+	"github.com/mikepea/shorty/pkg/shorty/models"
 )
 
 func main() {
@@ -19,6 +20,12 @@ func main() {
 	if err := database.Connect(dbPath); err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	// Run auto-migrations
+	if err := models.AutoMigrate(database.GetDB()); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
+	log.Println("Database migrations completed")
 
 	// Set up Gin router
 	r := gin.Default()
