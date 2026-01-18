@@ -387,6 +387,11 @@ func (h *Handler) Search(c *gin.Context) {
 	if groupID := c.Query("group_id"); groupID != "" {
 		query = query.Where("group_id = ?", groupID)
 	}
+	if tag := c.Query("tag"); tag != "" {
+		query = query.Joins("JOIN link_tags ON link_tags.link_id = links.id").
+			Joins("JOIN tags ON tags.id = link_tags.tag_id").
+			Where("tags.name = ?", tag)
+	}
 
 	// Pagination
 	limit := 50

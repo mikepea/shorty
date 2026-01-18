@@ -10,6 +10,7 @@ import (
 	"github.com/mikepea/shorty/pkg/shorty/groups"
 	"github.com/mikepea/shorty/pkg/shorty/links"
 	"github.com/mikepea/shorty/pkg/shorty/models"
+	"github.com/mikepea/shorty/pkg/shorty/tags"
 )
 
 func main() {
@@ -64,6 +65,10 @@ func main() {
 		// Links routes (protected)
 		linksHandler := links.NewHandler(database.GetDB())
 		linksHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
+
+		// Tags routes (protected)
+		tagsHandler := tags.NewHandler(database.GetDB())
+		tagsHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
 	}
 
 	// Get port from environment or use default
