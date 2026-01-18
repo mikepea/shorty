@@ -1,0 +1,47 @@
+# Binaries (in project root only)
+/shorty-server
+/shorty-cli
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Database files
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+
+# Build output
+dist/
+build/
+
+# Node modules (for web/)
+node_modules/
