@@ -107,7 +107,7 @@ func (h *Handler) List(c *gin.Context) {
 // ListByGroup returns all tags used in a specific group
 func (h *Handler) ListByGroup(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("groupId"), 10, 32)
+	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
 		return
@@ -323,7 +323,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.GET("/tags", h.List)
 
 	// List tags in a specific group
-	rg.GET("/groups/:groupId/tags", h.ListByGroup)
+	rg.GET("/groups/:id/tags", h.ListByGroup)
 
 	// Link tag operations
 	rg.GET("/links/:slug/tags", h.GetLinkTags)
