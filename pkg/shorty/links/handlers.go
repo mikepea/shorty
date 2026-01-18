@@ -157,7 +157,7 @@ func (h *Handler) checkGroupMembership(userID, groupID uint) error {
 // ListByGroup returns all links in a group
 func (h *Handler) ListByGroup(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("groupId"), 10, 32)
+	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
 		return
@@ -196,7 +196,7 @@ func (h *Handler) ListByGroup(c *gin.Context) {
 // Create creates a new link in a group
 func (h *Handler) Create(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("groupId"), 10, 32)
+	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
 		return
@@ -427,8 +427,8 @@ func (h *Handler) Search(c *gin.Context) {
 // RegisterRoutes registers link routes
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	// Group-scoped routes
-	rg.GET("/groups/:groupId/links", h.ListByGroup)
-	rg.POST("/groups/:groupId/links", h.Create)
+	rg.GET("/groups/:id/links", h.ListByGroup)
+	rg.POST("/groups/:id/links", h.Create)
 
 	// Slug-based routes
 	rg.GET("/links/:slug", h.GetBySlug)

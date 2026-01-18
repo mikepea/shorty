@@ -10,6 +10,7 @@ import (
 	"github.com/mikepea/shorty/pkg/shorty/groups"
 	"github.com/mikepea/shorty/pkg/shorty/links"
 	"github.com/mikepea/shorty/pkg/shorty/models"
+	"github.com/mikepea/shorty/pkg/shorty/redirect"
 	"github.com/mikepea/shorty/pkg/shorty/tags"
 )
 
@@ -70,6 +71,10 @@ func main() {
 		tagsHandler := tags.NewHandler(database.GetDB())
 		tagsHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
 	}
+
+	// Redirect routes (public, must be registered LAST to avoid conflicts)
+	redirectHandler := redirect.NewHandler(database.GetDB())
+	redirectHandler.RegisterRoutes(r)
 
 	// Get port from environment or use default
 	port := os.Getenv("PORT")
