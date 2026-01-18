@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/mikepea/shorty/pkg/shorty/auth"
 	"github.com/mikepea/shorty/pkg/shorty/database"
+	"github.com/mikepea/shorty/pkg/shorty/groups"
 	"github.com/mikepea/shorty/pkg/shorty/models"
 )
 
@@ -51,6 +52,13 @@ func main() {
 		// Auth routes
 		authHandler := auth.NewHandler(database.GetDB())
 		authHandler.RegisterRoutes(api.Group("/auth"))
+
+		// Groups routes (protected)
+		groupsHandler := groups.NewHandler(database.GetDB())
+		groupsGroup := api.Group("/groups")
+		groupsGroup.Use(auth.AuthMiddleware())
+		groupsHandler.RegisterRoutes(groupsGroup)
+		groupsHandler.RegisterMemberRoutes(groupsGroup)
 	}
 
 	// Get port from environment or use default
