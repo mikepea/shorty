@@ -8,6 +8,7 @@ import (
 	"github.com/mikepea/shorty/pkg/shorty/auth"
 	"github.com/mikepea/shorty/pkg/shorty/database"
 	"github.com/mikepea/shorty/pkg/shorty/groups"
+	"github.com/mikepea/shorty/pkg/shorty/links"
 	"github.com/mikepea/shorty/pkg/shorty/models"
 )
 
@@ -59,6 +60,10 @@ func main() {
 		groupsGroup.Use(auth.AuthMiddleware())
 		groupsHandler.RegisterRoutes(groupsGroup)
 		groupsHandler.RegisterMemberRoutes(groupsGroup)
+
+		// Links routes (protected)
+		linksHandler := links.NewHandler(database.GetDB())
+		linksHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
 	}
 
 	// Get port from environment or use default
