@@ -67,7 +67,7 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	// Create user
+	// Create user and personal group in a transaction
 	user := models.User{
 		Email:        req.Email,
 		PasswordHash: hashedPassword,
@@ -75,7 +75,30 @@ func (h *Handler) Register(c *gin.Context) {
 		SystemRole:   models.SystemRoleUser,
 	}
 
-	if err := h.db.Create(&user).Error; err != nil {
+	err = h.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&user).Error; err != nil {
+			return err
+		}
+
+		// Create personal group
+		personalGroup := models.Group{
+			Name:        req.Name + "'s Links",
+			Description: "Personal links for " + req.Name,
+		}
+		if err := tx.Create(&personalGroup).Error; err != nil {
+			return err
+		}
+
+		// Add user as admin of personal group
+		membership := models.GroupMembership{
+			UserID:  user.ID,
+			GroupID: personalGroup.ID,
+			Role:    models.GroupRoleAdmin,
+		}
+		return tx.Create(&membership).Error
+	})
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
