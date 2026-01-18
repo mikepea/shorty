@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mikepea/shorty/pkg/shorty/auth"
 	"github.com/mikepea/shorty/pkg/shorty/database"
 	"github.com/mikepea/shorty/pkg/shorty/models"
 )
@@ -37,7 +38,7 @@ func main() {
 		})
 	})
 
-	// API routes will be added here in future PRs
+	// API routes
 	api := r.Group("/api")
 	{
 		api.GET("/health", func(c *gin.Context) {
@@ -46,6 +47,10 @@ func main() {
 				"service": "shorty",
 			})
 		})
+
+		// Auth routes
+		authHandler := auth.NewHandler(database.GetDB())
+		authHandler.RegisterRoutes(api.Group("/auth"))
 	}
 
 	// Get port from environment or use default
