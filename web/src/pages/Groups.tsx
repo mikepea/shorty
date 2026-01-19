@@ -104,7 +104,6 @@ export default function Groups() {
         </section>
       </div>
 
-      <Link to="/" className="back-link">Back to Dashboard</Link>
     </div>
   );
 }

@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { links, groups, tags } from '../api/client';
 import type { Link as LinkType, Group, Tag } from '../api/types';
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
   const [recentLinks, setRecentLinks] = useState<LinkType[]>([]);
   const [userGroups, setUserGroups] = useState<Group[]>([]);
   const [topTags, setTopTags] = useState<Tag[]>([]);
@@ -31,21 +29,9 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      <header className="dashboard-header">
-        <h1>Shorty</h1>
-        <div className="user-menu">
-          <span>Welcome, {user?.name}</span>
-          <button onClick={logout}>Logout</button>
-        </div>
+      <header className="page-header">
+        <h1>Dashboard</h1>
       </header>
-
-      <nav className="dashboard-nav">
-        <Link to="/links">All Links</Link>
-        <Link to="/links/new">Add Link</Link>
-        <Link to="/groups">Groups</Link>
-        <Link to="/settings">Settings</Link>
-        {user?.system_role === 'admin' && <Link to="/admin">Admin</Link>}
-      </nav>
 
       <main className="dashboard-content">
         <section className="recent-links">
