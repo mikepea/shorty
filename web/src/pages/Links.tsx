@@ -122,8 +122,8 @@ export default function Links() {
                 <th>Title</th>
                 <th>Slug</th>
                 <th>Clicks</th>
-                <th>Tags</th>
                 <th>Created</th>
+                <th>Tags</th>
               </tr>
             </thead>
             <tbody>
@@ -139,6 +139,9 @@ export default function Links() {
                   </td>
                   <td className="links-table-slug">/{link.slug}</td>
                   <td className="links-table-clicks">{link.click_count}</td>
+                  <td className="links-table-date">
+                    {new Date(link.created_at).toLocaleDateString()}
+                  </td>
                   <td className="links-table-tags">
                     {link.tags && link.tags.slice(0, 3).map((tag) => (
                       <span key={tag.id} className="tag">{tag.name}</span>
@@ -146,9 +149,6 @@ export default function Links() {
                     {link.tags && link.tags.length > 3 && (
                       <span className="tag-more">+{link.tags.length - 3}</span>
                     )}
-                  </td>
-                  <td className="links-table-date">
-                    {new Date(link.created_at).toLocaleDateString()}
                   </td>
                 </tr>
               ))}
