@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mikepea/shorty/pkg/shorty/apikeys"
 	"github.com/mikepea/shorty/pkg/shorty/auth"
 	"github.com/mikepea/shorty/pkg/shorty/groups"
 	"github.com/mikepea/shorty/pkg/shorty/links"
@@ -49,24 +50,31 @@ func setupFullServer(db *gorm.DB) *gin.Engine {
 			})
 		})
 
-		// Auth routes
+		// Auth routes (public)
 		authHandler := auth.NewHandler(db)
 		authHandler.RegisterRoutes(api.Group("/auth"))
 
-		// Groups routes (protected)
+		// Combined auth middleware (accepts JWT or API key)
+		combinedAuth := apikeys.CombinedAuthMiddleware(db)
+
+		// API keys routes (JWT only - need to be logged in to manage keys)
+		apiKeysHandler := apikeys.NewHandler(db)
+		apiKeysHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
+
+		// Groups routes (protected - accepts JWT or API key)
 		groupsHandler := groups.NewHandler(db)
 		groupsGroup := api.Group("/groups")
-		groupsGroup.Use(auth.AuthMiddleware())
+		groupsGroup.Use(combinedAuth)
 		groupsHandler.RegisterRoutes(groupsGroup)
 		groupsHandler.RegisterMemberRoutes(groupsGroup)
 
-		// Links routes (protected)
+		// Links routes (protected - accepts JWT or API key)
 		linksHandler := links.NewHandler(db)
-		linksHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
+		linksHandler.RegisterRoutes(api.Group("", combinedAuth))
 
-		// Tags routes (protected)
+		// Tags routes (protected - accepts JWT or API key)
 		tagsHandler := tags.NewHandler(db)
-		tagsHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
+		tagsHandler.RegisterRoutes(api.Group("", combinedAuth))
 	}
 
 	// Redirect routes (public, must be registered LAST to avoid conflicts)
