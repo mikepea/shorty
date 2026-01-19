@@ -13,6 +13,7 @@ type Group struct {
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	ExternalID  string         `gorm:"index" json:"external_id,omitempty"`  // SCIM externalId
 	Name        string         `gorm:"not null" json:"name"`
 	Description string         `json:"description"`
 

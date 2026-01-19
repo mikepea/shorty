@@ -8,6 +8,7 @@ import AddLink from './pages/AddLink';
 import Groups from './pages/Groups';
 import Settings from './pages/Settings';
 import Admin from './pages/Admin';
+import SSOCallback from './pages/SSOCallback';
 import './App.css';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -105,6 +106,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/sso/callback" element={<SSOCallback />} />
     </Routes>
   );
 }

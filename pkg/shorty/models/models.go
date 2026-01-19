@@ -11,6 +11,9 @@ func AllModels() []interface{} {
 		&Link{},
 		&Tag{},
 		&APIKey{},
+		&OIDCProvider{},
+		&OIDCIdentity{},
+		&SCIMToken{},
 	}
 }
 
