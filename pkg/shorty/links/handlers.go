@@ -155,6 +155,18 @@ func (h *Handler) checkGroupMembership(userID, groupID uint) error {
 }
 
 // ListByGroup returns all links in a group
+// @Summary List links in a group
+// @Description Get all links belonging to a specific group
+// @Tags links
+// @Produce json
+// @Param id path int true "Group ID"
+// @Param is_unread query bool false "Filter by unread status"
+// @Param is_public query bool false "Filter by public status"
+// @Success 200 {array} LinkResponse
+// @Failure 400 {object} map[string]string "Invalid group ID"
+// @Failure 404 {object} map[string]string "Group not found"
+// @Security BearerAuth
+// @Router /groups/{id}/links [get]
 func (h *Handler) ListByGroup(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -194,6 +206,18 @@ func (h *Handler) ListByGroup(c *gin.Context) {
 }
 
 // Create creates a new link in a group
+// @Summary Create a link
+// @Description Create a new shortened link in a group
+// @Tags links
+// @Accept json
+// @Produce json
+// @Param id path int true "Group ID"
+// @Param request body CreateLinkRequest true "Link details"
+// @Success 201 {object} LinkResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 404 {object} map[string]string "Group not found"
+// @Security BearerAuth
+// @Router /groups/{id}/links [post]
 func (h *Handler) Create(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -245,6 +269,15 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 // GetBySlug returns a link by its slug
+// @Summary Get a link by slug
+// @Description Get link details by its short slug
+// @Tags links
+// @Produce json
+// @Param slug path string true "Link slug"
+// @Success 200 {object} LinkResponse
+// @Failure 404 {object} map[string]string "Link not found"
+// @Security BearerAuth
+// @Router /links/{slug} [get]
 func (h *Handler) GetBySlug(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	slug := c.Param("slug")
@@ -267,6 +300,18 @@ func (h *Handler) GetBySlug(c *gin.Context) {
 }
 
 // Update updates a link
+// @Summary Update a link
+// @Description Update an existing link by slug
+// @Tags links
+// @Accept json
+// @Produce json
+// @Param slug path string true "Link slug"
+// @Param request body UpdateLinkRequest true "Updated link details"
+// @Success 200 {object} LinkResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 404 {object} map[string]string "Link not found"
+// @Security BearerAuth
+// @Router /links/{slug} [put]
 func (h *Handler) Update(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	slug := c.Param("slug")
@@ -324,6 +369,15 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 // Delete deletes a link
+// @Summary Delete a link
+// @Description Delete a link by slug
+// @Tags links
+// @Produce json
+// @Param slug path string true "Link slug"
+// @Success 200 {object} map[string]string "Link deleted"
+// @Failure 404 {object} map[string]string "Link not found"
+// @Security BearerAuth
+// @Router /links/{slug} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	slug := c.Param("slug")
@@ -349,6 +403,20 @@ func (h *Handler) Delete(c *gin.Context) {
 }
 
 // Search searches links across all user's groups
+// @Summary Search links
+// @Description Search links across all groups the user has access to
+// @Tags links
+// @Produce json
+// @Param q query string false "Search query (searches title, description, URL)"
+// @Param is_unread query bool false "Filter by unread status"
+// @Param is_public query bool false "Filter by public status"
+// @Param group_id query int false "Filter by group ID"
+// @Param tag query string false "Filter by tag name"
+// @Param limit query int false "Max results (default 50, max 100)"
+// @Param offset query int false "Offset for pagination"
+// @Success 200 {array} LinkResponse
+// @Security BearerAuth
+// @Router /links [get]
 func (h *Handler) Search(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 

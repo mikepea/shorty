@@ -42,6 +42,13 @@ type GroupResponse struct {
 }
 
 // List returns all groups the current user is a member of
+// @Summary List groups
+// @Description Get all groups the current user is a member of
+// @Tags groups
+// @Produce json
+// @Success 200 {array} GroupResponse
+// @Security BearerAuth
+// @Router /groups [get]
 func (h *Handler) List(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 
@@ -69,6 +76,16 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // Create creates a new group and adds the creator as admin
+// @Summary Create a group
+// @Description Create a new group with the current user as admin
+// @Tags groups
+// @Accept json
+// @Produce json
+// @Param request body CreateGroupRequest true "Group details"
+// @Success 201 {object} GroupResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Security BearerAuth
+// @Router /groups [post]
 func (h *Handler) Create(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 
@@ -113,6 +130,15 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 // Get returns a specific group
+// @Summary Get a group
+// @Description Get details of a specific group
+// @Tags groups
+// @Produce json
+// @Param id path int true "Group ID"
+// @Success 200 {object} GroupResponse
+// @Failure 404 {object} map[string]string "Group not found"
+// @Security BearerAuth
+// @Router /groups/{id} [get]
 func (h *Handler) Get(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -147,6 +173,18 @@ func (h *Handler) Get(c *gin.Context) {
 }
 
 // Update updates a group (admin only)
+// @Summary Update a group
+// @Description Update a group (requires admin role in group)
+// @Tags groups
+// @Accept json
+// @Produce json
+// @Param id path int true "Group ID"
+// @Param request body UpdateGroupRequest true "Updated group details"
+// @Success 200 {object} GroupResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 403 {object} map[string]string "Admin access required"
+// @Security BearerAuth
+// @Router /groups/{id} [put]
 func (h *Handler) Update(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
@@ -200,6 +238,15 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 // Delete deletes a group (admin only)
+// @Summary Delete a group
+// @Description Delete a group (requires admin role in group)
+// @Tags groups
+// @Produce json
+// @Param id path int true "Group ID"
+// @Success 200 {object} map[string]string "Group deleted"
+// @Failure 403 {object} map[string]string "Admin access required"
+// @Security BearerAuth
+// @Router /groups/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
