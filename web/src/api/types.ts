@@ -82,3 +82,27 @@ export interface PinboardBookmark {
   shared: string;
   toread: string;
 }
+
+// Admin types
+export interface AdminUser {
+  id: number;
+  email: string;
+  name: string;
+  system_role: 'admin' | 'user';
+  created_at: string;
+  link_count: number;
+  group_count: number;
+}
+
+export interface AdminStats {
+  total_users: number;
+  total_links: number;
+  total_groups: number;
+  total_tags: number;
+  total_clicks: number;
+  public_links: number;
+  private_links: number;
+  unread_links: number;
+  admin_users: number;
+  active_api_keys: number;
+}

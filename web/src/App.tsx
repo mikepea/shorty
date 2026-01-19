@@ -7,6 +7,7 @@ import Links from './pages/Links';
 import AddLink from './pages/AddLink';
 import Groups from './pages/Groups';
 import Settings from './pages/Settings';
+import Admin from './pages/Admin';
 import './App.css';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -93,6 +94,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <Admin />
           </ProtectedRoute>
         }
       />

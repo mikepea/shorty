@@ -44,6 +44,7 @@ export default function Dashboard() {
         <Link to="/links/new">Add Link</Link>
         <Link to="/groups">Groups</Link>
         <Link to="/settings">Settings</Link>
+        {user?.system_role === 'admin' && <Link to="/admin">Admin</Link>}
       </nav>
 
       <main className="dashboard-content">
