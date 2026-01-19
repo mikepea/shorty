@@ -99,21 +99,24 @@ export default function LinkDetail() {
             </div>
           )}
 
-          {link.tags && link.tags.length > 0 && (
-            <div className="link-detail-tags">
-              <label>Tags</label>
-              <div className="tags">
-                {link.tags.map((tag) => (
-                  <Link
-                    key={tag.id}
-                    to={`/links?tag=${encodeURIComponent(tag.name)}`}
-                    className="tag"
-                  >
-                    {tag.name}
-                  </Link>
-                ))}
-              </div>
+        </section>
+
+        <section className="link-detail-tags-section">
+          <h2>Tags</h2>
+          {link.tags && link.tags.length > 0 ? (
+            <div className="tags">
+              {link.tags.map((tag) => (
+                <Link
+                  key={tag.id}
+                  to={`/links?tag=${encodeURIComponent(tag.name)}`}
+                  className="tag"
+                >
+                  {tag.name}
+                </Link>
+              ))}
             </div>
+          ) : (
+            <p className="no-tags">No tags</p>
           )}
         </section>
 

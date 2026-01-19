@@ -603,6 +603,10 @@ button:disabled {
 }
 
 .link-detail-main {
+  grid-row: 1;
+}
+
+.link-detail-main {
   background: #1a1a2e;
   border-radius: 8px;
   padding: 1.5rem;
@@ -652,6 +656,33 @@ button:disabled {
 .link-detail-description p {
   color: #e0e0e0;
   line-height: 1.6;
+}
+
+.link-detail-tags-section {
+  grid-column: 1 / -1;
+  background: #1a1a2e;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.link-detail-tags-section h2 {
+  font-size: 1rem;
+  color: #fff;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.link-detail-tags-section .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.no-tags {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
 }
 
 .link-detail-meta {
