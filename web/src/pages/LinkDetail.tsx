@@ -101,25 +101,6 @@ export default function LinkDetail() {
 
         </section>
 
-        <section className="link-detail-tags-section">
-          <h2>Tags</h2>
-          {link.tags && link.tags.length > 0 ? (
-            <div className="tags">
-              {link.tags.map((tag) => (
-                <Link
-                  key={tag.id}
-                  to={`/links?tag=${encodeURIComponent(tag.name)}`}
-                  className="tag"
-                >
-                  {tag.name}
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="no-tags">No tags</p>
-          )}
-        </section>
-
         <section className="link-detail-meta">
           <h2>Details</h2>
           <dl>
@@ -138,6 +119,25 @@ export default function LinkDetail() {
             <dt>Updated</dt>
             <dd>{new Date(link.updated_at).toLocaleString()}</dd>
           </dl>
+        </section>
+
+        <section className="link-detail-tags-section">
+          <h2>Tags</h2>
+          {link.tags && link.tags.length > 0 ? (
+            <div className="tags">
+              {link.tags.map((tag) => (
+                <Link
+                  key={tag.id}
+                  to={`/links?tag=${encodeURIComponent(tag.name)}`}
+                  className="tag"
+                >
+                  {tag.name}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="no-tags">No tags</p>
+          )}
         </section>
 
         <section className="link-detail-actions">

@@ -659,7 +659,7 @@ button:disabled {
 }
 
 .link-detail-tags-section {
-  grid-column: 1 / -1;
+  grid-column: 2;
   background: #1a1a2e;
   border-radius: 8px;
   padding: 1.5rem;
