@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mikepea/shorty/pkg/shorty/admin"
 	"github.com/mikepea/shorty/pkg/shorty/apikeys"
 	"github.com/mikepea/shorty/pkg/shorty/auth"
 	"github.com/mikepea/shorty/pkg/shorty/database"
@@ -83,6 +84,12 @@ func main() {
 		// Import/Export routes (protected - accepts JWT or API key)
 		importExportHandler := importexport.NewHandler(database.GetDB())
 		importExportHandler.RegisterRoutes(api.Group("", combinedAuth))
+
+		// Admin routes (JWT only, admin role required)
+		adminHandler := admin.NewHandler(database.GetDB())
+		adminGroup := api.Group("/admin")
+		adminGroup.Use(auth.AuthMiddleware(), auth.RequireAdmin())
+		adminHandler.RegisterRoutes(adminGroup)
 	}
 
 	// Redirect routes (public, must be registered LAST to avoid conflicts)

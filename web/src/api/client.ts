@@ -9,6 +9,8 @@ import type {
   AuthResponse,
   ImportResult,
   PinboardBookmark,
+  AdminUser,
+  AdminStats,
 } from './types';
 
 const API_BASE = '/api';
@@ -213,6 +215,30 @@ export const importExport = {
 
   exportSingle: (slug: string) =>
     request<PinboardBookmark>(`/export/${slug}`),
+};
+
+// Admin
+export const admin = {
+  getStats: () => request<AdminStats>('/admin/stats'),
+
+  listUsers: (params?: { q?: string; role?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.q) searchParams.set('q', params.q);
+    if (params?.role) searchParams.set('role', params.role);
+    const query = searchParams.toString();
+    return request<AdminUser[]>(`/admin/users${query ? `?${query}` : ''}`);
+  },
+
+  getUser: (id: number) => request<AdminUser>(`/admin/users/${id}`),
+
+  updateUser: (id: number, data: { name?: string; system_role?: string }) =>
+    request<AdminUser>(`/admin/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteUser: (id: number) =>
+    request<{ message: string }>(`/admin/users/${id}`, { method: 'DELETE' }),
 };
 
 export { APIError };
