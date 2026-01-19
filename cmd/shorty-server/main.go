@@ -134,7 +134,7 @@ func ensureAdminExists() error {
 	}
 
 	adminUser := models.User{
-		Email:        "admin@localhost",
+		Email:        "admin@shorty.local",
 		Name:         "Admin",
 		PasswordHash: hashedPassword,
 		SystemRole:   models.SystemRoleAdmin,
@@ -163,6 +163,6 @@ func ensureAdminExists() error {
 		return err
 	}
 
-	log.Printf("Created default admin user: admin@localhost (password: changeme)")
+	log.Printf("Created default admin user: admin@shorty.local (password: changeme)")
 	return nil
 }
