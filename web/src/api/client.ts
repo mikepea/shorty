@@ -11,6 +11,10 @@ import type {
   PinboardBookmark,
   AdminUser,
   AdminStats,
+  OIDCProvider,
+  OIDCProviderAdmin,
+  SCIMToken,
+  CreateSCIMTokenResponse,
 } from './types';
 
 const API_BASE = '/api';
@@ -217,6 +221,17 @@ export const importExport = {
     request<PinboardBookmark>(`/export/${slug}`),
 };
 
+// OIDC
+export const oidcProviders = {
+  list: () => request<OIDCProvider[]>('/oidc/providers'),
+
+  getAuthURL: (slug: string, returnUrl?: string) =>
+    request<{ auth_url: string }>(`/oidc/providers/${slug}/auth`, {
+      method: 'POST',
+      body: JSON.stringify({ return_url: returnUrl }),
+    }),
+};
+
 // Admin
 export const admin = {
   getStats: () => request<AdminStats>('/admin/stats'),
@@ -239,6 +254,53 @@ export const admin = {
 
   deleteUser: (id: number) =>
     request<{ message: string }>(`/admin/users/${id}`, { method: 'DELETE' }),
+
+  // OIDC Provider management
+  listOIDCProviders: () => request<OIDCProviderAdmin[]>('/admin/oidc/providers'),
+
+  createOIDCProvider: (data: {
+    name: string;
+    slug: string;
+    issuer: string;
+    client_id: string;
+    client_secret: string;
+    scopes?: string;
+    enabled?: boolean;
+    auto_provision?: boolean;
+  }) =>
+    request<OIDCProviderAdmin>('/admin/oidc/providers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateOIDCProvider: (id: number, data: {
+    name?: string;
+    issuer?: string;
+    client_id?: string;
+    client_secret?: string;
+    scopes?: string;
+    enabled?: boolean;
+    auto_provision?: boolean;
+  }) =>
+    request<OIDCProviderAdmin>(`/admin/oidc/providers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteOIDCProvider: (id: number) =>
+    request<{ message: string }>(`/admin/oidc/providers/${id}`, { method: 'DELETE' }),
+
+  // SCIM Token management
+  listSCIMTokens: () => request<SCIMToken[]>('/admin/scim-tokens'),
+
+  createSCIMToken: (description?: string) =>
+    request<CreateSCIMTokenResponse>('/admin/scim-tokens', {
+      method: 'POST',
+      body: JSON.stringify({ description }),
+    }),
+
+  deleteSCIMToken: (id: number) =>
+    request<{ message: string }>(`/admin/scim-tokens/${id}`, { method: 'DELETE' }),
 };
 
 export { APIError };

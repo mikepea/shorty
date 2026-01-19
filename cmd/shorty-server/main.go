@@ -13,7 +13,9 @@ import (
 	"github.com/mikepea/shorty/pkg/shorty/importexport"
 	"github.com/mikepea/shorty/pkg/shorty/links"
 	"github.com/mikepea/shorty/pkg/shorty/models"
+	"github.com/mikepea/shorty/pkg/shorty/oidc"
 	"github.com/mikepea/shorty/pkg/shorty/redirect"
+	"github.com/mikepea/shorty/pkg/shorty/scim"
 	"github.com/mikepea/shorty/pkg/shorty/tags"
 )
 
@@ -38,6 +40,12 @@ func main() {
 	// Create default admin user if no admin exists
 	if err := ensureAdminExists(); err != nil {
 		log.Fatalf("Failed to ensure admin user exists: %v", err)
+	}
+
+	// Get base URL from environment or use default
+	baseURL := os.Getenv("SHORTY_BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
 	}
 
 	// Set up Gin router
@@ -95,6 +103,29 @@ func main() {
 		adminGroup := api.Group("/admin")
 		adminGroup.Use(auth.AuthMiddleware(), auth.RequireAdmin())
 		adminHandler.RegisterRoutes(adminGroup)
+
+		// OIDC routes
+		oidcHandler := oidc.NewHandler(database.GetDB(), baseURL)
+		oidcHandler.RegisterRoutes(api.Group("/oidc"))
+		oidcHandler.RegisterAdminRoutes(adminGroup.Group("/oidc"))
+
+		// SCIM token management (admin only)
+		scimTokenHandler := scim.NewTokenHandler(database.GetDB())
+		scimTokenHandler.RegisterAdminRoutes(adminGroup)
+	}
+
+	// SCIM routes (bearer token auth, outside /api to follow SCIM spec)
+	scimGroup := r.Group("/scim/v2")
+	scimGroup.Use(scim.SCIMAuthMiddleware(database.GetDB()))
+	{
+		scimUserHandler := scim.NewUserHandler(database.GetDB(), baseURL)
+		scimUserHandler.RegisterRoutes(scimGroup)
+
+		scimGroupHandler := scim.NewGroupHandler(database.GetDB(), baseURL)
+		scimGroupHandler.RegisterRoutes(scimGroup)
+
+		scimConfigHandler := scim.NewConfigHandler(database.GetDB(), baseURL)
+		scimConfigHandler.RegisterRoutes(scimGroup)
 	}
 
 	// Redirect routes (public, must be registered LAST to avoid conflicts)

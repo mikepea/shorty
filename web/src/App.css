@@ -728,6 +728,64 @@ button:disabled {
   font-style: italic;
 }
 
+/* SSO Section */
+.sso-section {
+  margin-bottom: 1.5rem;
+}
+
+.sso-label {
+  text-align: center;
+  color: #666;
+  margin-bottom: 0.75rem;
+}
+
+.sso-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sso-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  color: #333;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sso-button:hover {
+  background: #e9ecef;
+}
+
+.sso-button:disabled {
+  background: #f8f9fa;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+  color: #999;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #ddd;
+}
+
+.divider span {
+  padding: 0 0.75rem;
+  font-size: 0.85rem;
+}
+
 /* Admin Page */
 .admin-page {
   max-width: 1200px;

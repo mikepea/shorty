@@ -106,3 +106,40 @@ export interface AdminStats {
   admin_users: number;
   active_api_keys: number;
 }
+
+// OIDC types
+export interface OIDCProvider {
+  id: number;
+  name: string;
+  slug: string;
+  enabled: boolean;
+}
+
+export interface OIDCProviderAdmin {
+  id: number;
+  name: string;
+  slug: string;
+  issuer: string;
+  client_id: string;
+  scopes: string;
+  enabled: boolean;
+  auto_provision: boolean;
+  created_at: string;
+}
+
+// SCIM types
+export interface SCIMToken {
+  id: number;
+  token_prefix: string;
+  description: string;
+  last_used_at: string | null;
+  created_at: string;
+}
+
+export interface CreateSCIMTokenResponse {
+  id: number;
+  token: string;
+  token_prefix: string;
+  description: string;
+  created_at: string;
+}
