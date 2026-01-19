@@ -52,13 +52,9 @@ export default function Links() {
 
   return (
     <div className="links-page">
-      <header className="page-header">
+      <header className="links-header">
         <h1>Links</h1>
-        <Link to="/links/new" className="btn-primary">Add Link</Link>
-      </header>
-
-      <div className="links-layout">
-        <aside className="links-sidebar">
+        <div className="links-toolbar">
           <form onSubmit={handleSearch} className="search-form">
             <input
               type="search"
@@ -69,9 +65,8 @@ export default function Links() {
             <button type="submit">Search</button>
           </form>
 
-          <div className="filter-section">
-            <h3>Filter</h3>
-            <label>
+          <div className="filter-controls">
+            <label className="filter-checkbox">
               <input
                 type="checkbox"
                 checked={showUnread}
@@ -87,89 +82,83 @@ export default function Links() {
               />
               Unread only
             </label>
-          </div>
 
-          <div className="tags-section">
-            <h3>Tags</h3>
-            {currentTag && (
-              <button
-                onClick={() => {
-                  const params = new URLSearchParams(searchParams);
-                  params.delete('tag');
-                  setSearchParams(params);
-                }}
-                className="clear-tag"
-              >
-                Clear: {currentTag}
-              </button>
+            {allTags.length > 0 && (
+              <div className="tag-filter">
+                <select
+                  value={currentTag || ''}
+                  onChange={(e) => {
+                    const params = new URLSearchParams(searchParams);
+                    if (e.target.value) {
+                      params.set('tag', e.target.value);
+                    } else {
+                      params.delete('tag');
+                    }
+                    setSearchParams(params);
+                  }}
+                >
+                  <option value="">All tags</option>
+                  {allTags.map((tag) => (
+                    <option key={tag.id} value={tag.name}>
+                      {tag.name} ({tag.link_count})
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
-            <ul className="tag-list">
-              {allTags.map((tag) => (
-                <li key={tag.id}>
-                  <button
-                    onClick={() => {
-                      const params = new URLSearchParams(searchParams);
-                      params.set('tag', tag.name);
-                      setSearchParams(params);
-                    }}
-                    className={currentTag === tag.name ? 'active' : ''}
-                  >
-                    {tag.name} ({tag.link_count})
-                  </button>
-                </li>
-              ))}
-            </ul>
           </div>
-        </aside>
 
-        <main className="links-main">
-          {linksList.length === 0 ? (
-            <p className="no-results">No links found.</p>
-          ) : (
-            <table className="links-table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Slug</th>
-                  <th>Clicks</th>
-                  <th>Tags</th>
-                  <th>Created</th>
+          <Link to="/links/new" className="btn-primary">Add Link</Link>
+        </div>
+      </header>
+
+      <main className="links-main">
+        {linksList.length === 0 ? (
+          <p className="no-results">No links found.</p>
+        ) : (
+          <table className="links-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Slug</th>
+                <th>Clicks</th>
+                <th>Tags</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {linksList.map((link) => (
+                <tr
+                  key={link.id}
+                  onClick={() => handleRowClick(link.slug)}
+                  className={link.is_unread ? 'unread' : ''}
+                >
+                  <td className="links-table-title">
+                    <span className="link-title-text">{link.title || link.url}</span>
+                    {link.is_unread && <span className="unread-badge">Unread</span>}
+                  </td>
+                  <td className="links-table-slug">/{link.slug}</td>
+                  <td className="links-table-clicks">{link.click_count}</td>
+                  <td className="links-table-tags">
+                    {link.tags && link.tags.slice(0, 3).map((tag) => (
+                      <span key={tag.id} className="tag">{tag.name}</span>
+                    ))}
+                    {link.tags && link.tags.length > 3 && (
+                      <span className="tag-more">+{link.tags.length - 3}</span>
+                    )}
+                  </td>
+                  <td className="links-table-date">
+                    {new Date(link.created_at).toLocaleDateString()}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {linksList.map((link) => (
-                  <tr
-                    key={link.id}
-                    onClick={() => handleRowClick(link.slug)}
-                    className={link.is_unread ? 'unread' : ''}
-                  >
-                    <td className="links-table-title">
-                      <span className="link-title-text">{link.title || link.url}</span>
-                      {link.is_unread && <span className="unread-badge">Unread</span>}
-                    </td>
-                    <td className="links-table-slug">/{link.slug}</td>
-                    <td className="links-table-clicks">{link.click_count}</td>
-                    <td className="links-table-tags">
-                      {link.tags && link.tags.slice(0, 3).map((tag) => (
-                        <span key={tag.id} className="tag">{tag.name}</span>
-                      ))}
-                      {link.tags && link.tags.length > 3 && (
-                        <span className="tag-more">+{link.tags.length - 3}</span>
-                      )}
-                    </td>
-                    <td className="links-table-date">
-                      {new Date(link.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <div className="links-count">
-            {linksList.length} link{linksList.length !== 1 ? 's' : ''}
-          </div>
-        </main>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <div className="links-count">
+          {linksList.length} link{linksList.length !== 1 ? 's' : ''}
+        </div>
+      </main>
     </div>
   );
 }
