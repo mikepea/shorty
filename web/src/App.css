@@ -28,15 +28,21 @@ button, .btn-primary, .btn-secondary {
   border-radius: 4px;
   cursor: pointer;
   font-size: 1rem;
+  display: inline-block;
+  text-decoration: none;
 }
 
-button {
+button,
+.btn-primary {
   background: #0066cc;
   color: white;
 }
 
-button:hover {
+button:hover,
+.btn-primary:hover {
   background: #0055aa;
+  color: white;
+  text-decoration: none;
 }
 
 button:disabled {
@@ -467,6 +473,8 @@ button:disabled {
 
 .links-toolbar .btn-primary {
   margin-left: auto;
+  padding: 0.5rem 1.25rem;
+  font-weight: 500;
 }
 
 .links-main {
