@@ -8,17 +8,18 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     Ubuntu, Cantarell, sans-serif;
   line-height: 1.5;
-  color: #333;
-  background: #f5f5f5;
+  color: #e0e0e0;
+  background: #0f0f1a;
 }
 
 a {
-  color: #0066cc;
+  color: #5c9eff;
   text-decoration: none;
 }
 
 a:hover {
   text-decoration: underline;
+  color: #7cb3ff;
 }
 
 button, .btn-primary, .btn-secondary {
@@ -44,9 +45,13 @@ button:disabled {
 }
 
 .btn-secondary {
-  background: #f0f0f0;
-  color: #333;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e0e0e0;
   display: inline-block;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .btn-danger {
@@ -185,22 +190,24 @@ button:disabled {
   max-width: 400px;
   margin: 100px auto;
   padding: 2rem;
-  background: white;
+  background: #1a1a2e;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .auth-container h1 {
   margin-bottom: 1.5rem;
   text-align: center;
+  color: #fff;
 }
 
 .error {
   padding: 0.75rem;
   margin-bottom: 1rem;
-  background: #ffebee;
-  color: #c62828;
+  background: rgba(204, 0, 0, 0.2);
+  color: #ff6b6b;
   border-radius: 4px;
+  border: 1px solid rgba(204, 0, 0, 0.3);
 }
 
 .form-group {
@@ -211,6 +218,7 @@ button:disabled {
   display: block;
   margin-bottom: 0.25rem;
   font-weight: 500;
+  color: #e0e0e0;
 }
 
 .form-group input,
@@ -218,22 +226,29 @@ button:disabled {
 .form-group textarea {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #ddd;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
   font-size: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #0066cc;
+  border-color: #5c9eff;
 }
 
 .form-group small {
   display: block;
   margin-top: 0.25rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
   font-size: 0.85rem;
 }
 
@@ -271,16 +286,17 @@ button:disabled {
 
 .dashboard-content section {
   padding: 1rem;
-  background: white;
+  background: #1a1a2e;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dashboard-content h2 {
   margin-bottom: 1rem;
   font-size: 1.2rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 0.5rem;
+  color: #fff;
 }
 
 .recent-links {
@@ -303,7 +319,7 @@ button:disabled {
 
 .link-item {
   padding: 0.75rem 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .link-item:last-child {
@@ -316,7 +332,7 @@ button:disabled {
 
 .link-slug {
   margin-left: 0.5rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
   font-family: monospace;
   font-size: 0.9rem;
   cursor: pointer;
@@ -324,7 +340,7 @@ button:disabled {
 
 .link-clicks {
   margin-left: 0.5rem;
-  color: #999;
+  color: rgba(255, 255, 255, 0.4);
   font-size: 0.85rem;
 }
 
@@ -340,7 +356,11 @@ button:disabled {
 
 .group-list li {
   padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.group-list li:last-child {
+  border-bottom: none;
 }
 
 .tags {
@@ -352,8 +372,8 @@ button:disabled {
 .tag {
   display: inline-block;
   padding: 0.25rem 0.5rem;
-  background: #e3f2fd;
-  color: #1565c0;
+  background: rgba(92, 158, 255, 0.2);
+  color: #5c9eff;
   border-radius: 4px;
   font-size: 0.85rem;
 }
@@ -368,10 +388,14 @@ button:disabled {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: white;
+  background: #1a1a2e;
   border-radius: 8px;
   margin-bottom: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.page-header h1 {
+  color: #fff;
 }
 
 .links-layout {
@@ -381,10 +405,10 @@ button:disabled {
 }
 
 .links-sidebar {
-  background: white;
+  background: #1a1a2e;
   border-radius: 8px;
   padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   height: fit-content;
 }
 
@@ -397,29 +421,39 @@ button:disabled {
 .search-form input {
   flex: 1;
   padding: 0.5rem;
-  border: 1px solid #ddd;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+}
+
+.search-form input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .filter-section,
 .tags-section {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .filter-section h3,
 .tags-section h3 {
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.filter-section label {
+  color: #e0e0e0;
 }
 
 .clear-tag {
   margin-bottom: 0.5rem;
   padding: 0.25rem 0.5rem;
-  background: #ffebee;
-  color: #c62828;
+  background: rgba(204, 0, 0, 0.2);
+  color: #ff6b6b;
   font-size: 0.85rem;
 }
 
@@ -436,24 +470,25 @@ button:disabled {
   text-align: left;
   padding: 0.25rem 0.5rem;
   background: transparent;
-  color: #333;
+  color: rgba(255, 255, 255, 0.7);
   font-size: 0.9rem;
 }
 
 .tag-list button:hover {
-  background: #f0f0f0;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 
 .tag-list button.active {
-  background: #e3f2fd;
-  color: #1565c0;
+  background: rgba(92, 158, 255, 0.2);
+  color: #5c9eff;
 }
 
 .links-main {
-  background: white;
+  background: #1a1a2e;
   border-radius: 8px;
   padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .links-main .link-list {
@@ -464,12 +499,13 @@ button:disabled {
 
 .links-main .link-item {
   padding: 1rem;
-  border: 1px solid #eee;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .links-main .link-item.unread {
-  border-left: 4px solid #0066cc;
+  border-left: 4px solid #5c9eff;
 }
 
 .link-header {
@@ -486,10 +522,10 @@ button:disabled {
 
 .link-visibility {
   padding: 0.125rem 0.5rem;
-  background: #f0f0f0;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   font-size: 0.75rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .link-meta {
@@ -497,11 +533,11 @@ button:disabled {
   gap: 1rem;
   margin-bottom: 0.5rem;
   font-size: 0.85rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .link-description {
-  color: #666;
+  color: rgba(255, 255, 255, 0.6);
   margin-bottom: 0.5rem;
 }
 
@@ -525,7 +561,7 @@ button:disabled {
 
 .no-results {
   text-align: center;
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
   padding: 2rem;
 }
 
@@ -535,10 +571,10 @@ button:disabled {
 }
 
 .link-form {
-  background: white;
+  background: #1a1a2e;
   border-radius: 8px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .form-actions {
@@ -578,17 +614,18 @@ button:disabled {
 }
 
 .groups-content section {
-  background: white;
+  background: #1a1a2e;
   border-radius: 8px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .groups-content h2 {
   margin-bottom: 1rem;
   font-size: 1.1rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 0.5rem;
+  color: #fff;
 }
 
 .create-group-form {
@@ -599,9 +636,15 @@ button:disabled {
 .create-group-form input {
   flex: 1;
   padding: 0.5rem;
-  border: 1px solid #ddd;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
   font-size: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+}
+
+.create-group-form input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .groups-list {
@@ -613,7 +656,7 @@ button:disabled {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .group-item:last-child {
@@ -629,11 +672,12 @@ button:disabled {
 .group-name {
   font-weight: 500;
   font-size: 1.1rem;
+  color: #e0e0e0;
 }
 
 .group-date {
   font-size: 0.85rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .group-actions {
@@ -659,21 +703,22 @@ button:disabled {
 }
 
 .settings-content section {
-  background: white;
+  background: #1a1a2e;
   border-radius: 8px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .settings-content h2 {
   margin-bottom: 1rem;
   font-size: 1.1rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 0.5rem;
+  color: #fff;
 }
 
 .section-description {
-  color: #666;
+  color: rgba(255, 255, 255, 0.6);
   margin-bottom: 1rem;
   font-size: 0.9rem;
 }
@@ -692,12 +737,16 @@ button:disabled {
 .profile-field label {
   width: 80px;
   font-weight: 500;
-  color: #666;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.profile-field span {
+  color: #e0e0e0;
 }
 
 .new-key-alert {
-  background: #e8f5e9;
-  border: 1px solid #a5d6a7;
+  background: rgba(102, 187, 106, 0.15);
+  border: 1px solid rgba(102, 187, 106, 0.3);
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -706,18 +755,23 @@ button:disabled {
 .new-key-alert strong {
   display: block;
   margin-bottom: 0.5rem;
-  color: #2e7d32;
+  color: #66bb6a;
+}
+
+.new-key-alert p {
+  color: #e0e0e0;
 }
 
 .new-key-alert code {
   display: block;
-  background: white;
+  background: rgba(0, 0, 0, 0.3);
   padding: 0.75rem;
   border-radius: 4px;
   margin: 0.5rem 0;
   word-break: break-all;
   cursor: pointer;
   font-size: 0.85rem;
+  color: #e0e0e0;
 }
 
 .new-key-alert button {
@@ -734,9 +788,15 @@ button:disabled {
 .create-key-form input {
   flex: 1;
   padding: 0.5rem;
-  border: 1px solid #ddd;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
   font-size: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+}
+
+.create-key-form input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .api-keys-list {
@@ -748,7 +808,7 @@ button:disabled {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .api-key-item:last-child {
@@ -763,23 +823,25 @@ button:disabled {
 
 .key-prefix {
   font-family: monospace;
-  background: #f5f5f5;
+  background: rgba(255, 255, 255, 0.1);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.9rem;
+  color: #e0e0e0;
 }
 
 .key-description {
   font-weight: 500;
+  color: #e0e0e0;
 }
 
 .key-meta {
   font-size: 0.85rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .no-keys {
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
   font-style: italic;
 }
 
@@ -790,7 +852,7 @@ button:disabled {
 
 .sso-label {
   text-align: center;
-  color: #666;
+  color: rgba(255, 255, 255, 0.6);
   margin-bottom: 0.75rem;
 }
 
@@ -803,21 +865,21 @@ button:disabled {
 .sso-button {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  color: #333;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e0e0e0;
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .sso-button:hover {
-  background: #e9ecef;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .sso-button:disabled {
-  background: #f8f9fa;
-  color: #999;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.4);
   cursor: not-allowed;
 }
 
@@ -826,14 +888,14 @@ button:disabled {
   align-items: center;
   text-align: center;
   margin: 1.5rem 0;
-  color: #999;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .divider::before,
 .divider::after {
   content: '';
   flex: 1;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .divider span {
@@ -847,18 +909,19 @@ button:disabled {
 }
 
 .admin-page section {
-  background: white;
+  background: #1a1a2e;
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .admin-page h2 {
   margin-bottom: 1rem;
   font-size: 1.1rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 0.5rem;
+  color: #fff;
 }
 
 .stats-grid {
@@ -868,24 +931,24 @@ button:disabled {
 }
 
 .stat-card {
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   padding: 1rem;
   text-align: center;
-  border: 1px solid #e9ecef;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .stat-value {
   display: block;
   font-size: 2rem;
   font-weight: 600;
-  color: #0066cc;
+  color: #5c9eff;
 }
 
 .stat-label {
   display: block;
   font-size: 0.85rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.6);
   margin-top: 0.25rem;
 }
 
@@ -895,9 +958,11 @@ button:disabled {
 
 .users-section .search-form select {
   padding: 0.5rem;
-  border: 1px solid #ddd;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
   font-size: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
 }
 
 .users-table {
@@ -909,30 +974,37 @@ button:disabled {
 .users-table td {
   padding: 0.75rem;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .users-table th {
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.05);
   font-weight: 500;
   font-size: 0.85rem;
-  color: #666;
+  color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
 }
 
+.users-table td {
+  color: #e0e0e0;
+}
+
 .users-table tr.current-user {
-  background: #e3f2fd;
+  background: rgba(92, 158, 255, 0.1);
 }
 
 .users-table select {
   padding: 0.25rem 0.5rem;
-  border: 1px solid #ddd;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
   font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
 }
 
 .users-table select:disabled {
-  background: #f0f0f0;
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.4);
   cursor: not-allowed;
 }
 
