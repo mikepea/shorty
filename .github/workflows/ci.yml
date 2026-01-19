@@ -20,6 +20,12 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@v1.16.4
+
+      - name: Check generated files are up to date
+        run: make check-generate
+
       - name: Build
         run: go build -v ./...
 

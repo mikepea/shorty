@@ -46,6 +46,16 @@ type UserResponse struct {
 }
 
 // Register handles user registration
+// @Summary Register a new user
+// @Description Create a new user account and receive a JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Registration details"
+// @Success 201 {object} AuthResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 409 {object} map[string]string "Email already registered"
+// @Router /auth/register [post]
 func (h *Handler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -122,6 +132,16 @@ func (h *Handler) Register(c *gin.Context) {
 }
 
 // Login handles user login
+// @Summary Login
+// @Description Authenticate with email and password to receive a JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login credentials"
+// @Success 200 {object} AuthResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 401 {object} map[string]string "Invalid credentials"
+// @Router /auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -161,6 +181,14 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 // Me returns the current authenticated user
+// @Summary Get current user
+// @Description Get the authenticated user's profile
+// @Tags auth
+// @Produce json
+// @Success 200 {object} UserResponse
+// @Failure 401 {object} map[string]string "Authentication required"
+// @Security BearerAuth
+// @Router /auth/me [get]
 func (h *Handler) Me(c *gin.Context) {
 	userID, exists := GetUserID(c)
 	if !exists {
@@ -183,8 +211,12 @@ func (h *Handler) Me(c *gin.Context) {
 }
 
 // Logout handles user logout (client-side token invalidation)
-// Note: With JWT, logout is typically handled client-side by discarding the token
-// For true server-side logout, you'd need a token blacklist
+// @Summary Logout
+// @Description Logout the current user (client-side token invalidation)
+// @Tags auth
+// @Produce json
+// @Success 200 {object} map[string]string "Logged out successfully"
+// @Router /auth/logout [post]
 func (h *Handler) Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }

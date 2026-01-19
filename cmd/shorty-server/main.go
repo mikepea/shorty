@@ -17,7 +17,34 @@ import (
 	"github.com/mikepea/shorty/pkg/shorty/redirect"
 	"github.com/mikepea/shorty/pkg/shorty/scim"
 	"github.com/mikepea/shorty/pkg/shorty/tags"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "github.com/mikepea/shorty/api/swagger"
 )
+
+// @title Shorty API
+// @version 1.0
+// @description A modern URL shortener with team collaboration, SSO, and SCIM support.
+
+// @contact.name Shorty Support
+// @contact.url https://github.com/mikepea/shorty
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /api
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description JWT token or API key. Format: "Bearer {token}"
+
+// @securityDefinitions.apikey SCIMAuth
+// @in header
+// @name Authorization
+// @description SCIM bearer token. Format: "Bearer {scim_token}"
 
 func main() {
 	// Get database path from environment or use default
@@ -57,6 +84,9 @@ func main() {
 			"status": "ok",
 		})
 	})
+
+	// Swagger documentation
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API routes
 	api := r.Group("/api")
