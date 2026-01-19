@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Links from './pages/Links';
 import AddLink from './pages/AddLink';
 import Groups from './pages/Groups';
+import Settings from './pages/Settings';
 import './App.css';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -84,6 +85,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Groups />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         }
       />
