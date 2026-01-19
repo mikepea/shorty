@@ -23,7 +23,7 @@ clean:
 
 # Install development tools
 tools:
-	go install github.com/swaggo/swag/cmd/swag@latest
+	go install github.com/swaggo/swag/cmd/swag@v1.16.4
 
 # Check that generated files are up to date
 check-generate: generate
