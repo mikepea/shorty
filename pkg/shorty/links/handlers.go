@@ -283,7 +283,7 @@ func (h *Handler) GetBySlug(c *gin.Context) {
 	slug := c.Param("slug")
 
 	var link models.Link
-	if err := h.db.Where("slug = ?", slug).First(&link).Error; err != nil {
+	if err := h.db.Preload("Tags").Where("slug = ?", slug).First(&link).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Link not found"})
 		return
 	}
