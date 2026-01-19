@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mikepea/shorty/pkg/shorty/apikeys"
 	"github.com/mikepea/shorty/pkg/shorty/auth"
 	"github.com/mikepea/shorty/pkg/shorty/database"
 	"github.com/mikepea/shorty/pkg/shorty/groups"
@@ -52,24 +53,31 @@ func main() {
 			})
 		})
 
-		// Auth routes
+		// Auth routes (public)
 		authHandler := auth.NewHandler(database.GetDB())
 		authHandler.RegisterRoutes(api.Group("/auth"))
 
-		// Groups routes (protected)
+		// Combined auth middleware (accepts JWT or API key)
+		combinedAuth := apikeys.CombinedAuthMiddleware(database.GetDB())
+
+		// API keys routes (JWT only - need to be logged in to manage keys)
+		apiKeysHandler := apikeys.NewHandler(database.GetDB())
+		apiKeysHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
+
+		// Groups routes (protected - accepts JWT or API key)
 		groupsHandler := groups.NewHandler(database.GetDB())
 		groupsGroup := api.Group("/groups")
-		groupsGroup.Use(auth.AuthMiddleware())
+		groupsGroup.Use(combinedAuth)
 		groupsHandler.RegisterRoutes(groupsGroup)
 		groupsHandler.RegisterMemberRoutes(groupsGroup)
 
-		// Links routes (protected)
+		// Links routes (protected - accepts JWT or API key)
 		linksHandler := links.NewHandler(database.GetDB())
-		linksHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
+		linksHandler.RegisterRoutes(api.Group("", combinedAuth))
 
-		// Tags routes (protected)
+		// Tags routes (protected - accepts JWT or API key)
 		tagsHandler := tags.NewHandler(database.GetDB())
-		tagsHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
+		tagsHandler.RegisterRoutes(api.Group("", combinedAuth))
 	}
 
 	// Redirect routes (public, must be registered LAST to avoid conflicts)
