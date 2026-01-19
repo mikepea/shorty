@@ -9,6 +9,7 @@ import (
 	"github.com/mikepea/shorty/pkg/shorty/auth"
 	"github.com/mikepea/shorty/pkg/shorty/database"
 	"github.com/mikepea/shorty/pkg/shorty/groups"
+	"github.com/mikepea/shorty/pkg/shorty/importexport"
 	"github.com/mikepea/shorty/pkg/shorty/links"
 	"github.com/mikepea/shorty/pkg/shorty/models"
 	"github.com/mikepea/shorty/pkg/shorty/redirect"
@@ -78,6 +79,10 @@ func main() {
 		// Tags routes (protected - accepts JWT or API key)
 		tagsHandler := tags.NewHandler(database.GetDB())
 		tagsHandler.RegisterRoutes(api.Group("", combinedAuth))
+
+		// Import/Export routes (protected - accepts JWT or API key)
+		importExportHandler := importexport.NewHandler(database.GetDB())
+		importExportHandler.RegisterRoutes(api.Group("", combinedAuth))
 	}
 
 	// Redirect routes (public, must be registered LAST to avoid conflicts)

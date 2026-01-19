@@ -9,6 +9,7 @@ import (
 	"github.com/mikepea/shorty/pkg/shorty/apikeys"
 	"github.com/mikepea/shorty/pkg/shorty/auth"
 	"github.com/mikepea/shorty/pkg/shorty/groups"
+	"github.com/mikepea/shorty/pkg/shorty/importexport"
 	"github.com/mikepea/shorty/pkg/shorty/links"
 	"github.com/mikepea/shorty/pkg/shorty/models"
 	"github.com/mikepea/shorty/pkg/shorty/redirect"
@@ -75,6 +76,10 @@ func setupFullServer(db *gorm.DB) *gin.Engine {
 		// Tags routes (protected - accepts JWT or API key)
 		tagsHandler := tags.NewHandler(db)
 		tagsHandler.RegisterRoutes(api.Group("", combinedAuth))
+
+		// Import/Export routes (protected - accepts JWT or API key)
+		importExportHandler := importexport.NewHandler(db)
+		importExportHandler.RegisterRoutes(api.Group("", combinedAuth))
 	}
 
 	// Redirect routes (public, must be registered LAST to avoid conflicts)
