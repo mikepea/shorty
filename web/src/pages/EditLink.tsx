@@ -50,17 +50,24 @@ export default function EditLink() {
         is_public: isPublic,
         is_unread: isUnread,
       });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update link');
+      setIsSaving(false);
+      return;
+    }
 
+    try {
       // Update tags
       const tagNames = tagsInput.split(',').map((t) => t.trim()).filter(Boolean);
       await tagsApi.setLinkTags(slug, tagNames);
-
-      navigate(`/links/${slug}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update link');
-    } finally {
+      setError(err instanceof Error ? err.message : 'Failed to update tags');
       setIsSaving(false);
+      return;
     }
+
+    setIsSaving(false);
+    navigate(`/links/${slug}`);
   };
 
   if (isLoading) {
