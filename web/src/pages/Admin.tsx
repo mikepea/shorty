@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { admin } from '../api/client';
 import type { AdminStats, AdminUser } from '../api/types';
@@ -206,7 +206,6 @@ export default function Admin() {
         )}
       </section>
 
-      <Link to="/" className="back-link">Back to Dashboard</Link>
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiKeys } from '../api/client';
 import type { APIKey, CreateAPIKeyResponse } from '../api/types';
@@ -148,7 +147,6 @@ export default function Settings() {
         </section>
       </div>
 
-      <Link to="/" className="back-link">Back to Dashboard</Link>
     </div>
   );
 }

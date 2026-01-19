@@ -206,7 +206,6 @@ export default function Links() {
         </main>
       </div>
 
-      <Link to="/" className="back-link">Back to Dashboard</Link>
     </div>
   );
 }
