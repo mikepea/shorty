@@ -506,3 +506,86 @@ button:disabled {
     flex-wrap: wrap;
   }
 }
+
+/* Groups Page */
+.groups-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.groups-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.groups-content section {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.groups-content h2 {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.create-group-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.create-group-form input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.groups-list {
+  list-style: none;
+}
+
+.group-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.group-item:last-child {
+  border-bottom: none;
+}
+
+.group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.group-name {
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.group-date {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.group-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.group-actions a,
+.group-actions button {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
