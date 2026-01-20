@@ -5,7 +5,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Links from './pages/Links';
+import LinkDetail from './pages/LinkDetail';
 import AddLink from './pages/AddLink';
+import EditLink from './pages/EditLink';
 import Groups from './pages/Groups';
 import Settings from './pages/Settings';
 import Admin from './pages/Admin';
@@ -80,6 +82,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AddLink />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/links/:slug"
+        element={
+          <ProtectedRoute>
+            <LinkDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/links/:slug/edit"
+        element={
+          <ProtectedRoute>
+            <EditLink />
           </ProtectedRoute>
         }
       />

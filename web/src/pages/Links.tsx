@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { links as linksApi, tags as tagsApi } from '../api/client';
 import type { Link as LinkType, Tag } from '../api/types';
 
 export default function Links() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [linksList, setLinksList] = useState<LinkType[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
@@ -11,7 +12,6 @@ export default function Links() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
   const currentTag = searchParams.get('tag');
-  const showUnread = searchParams.get('unread') === 'true';
 
   useEffect(() => {
     setIsLoading(true);
@@ -19,7 +19,6 @@ export default function Links() {
       linksApi.search({
         q: searchParams.get('q') || undefined,
         tag: currentTag || undefined,
-        unread: showUnread,
       }),
       tagsApi.list(),
     ])
@@ -28,7 +27,7 @@ export default function Links() {
         setAllTags(tagsData);
       })
       .finally(() => setIsLoading(false));
-  }, [searchParams, currentTag, showUnread]);
+  }, [searchParams, currentTag]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,32 +40,8 @@ export default function Links() {
     setSearchParams(params);
   };
 
-  const handleDelete = async (slug: string) => {
-    if (!confirm('Are you sure you want to delete this link?')) return;
-
-    try {
-      await linksApi.delete(slug);
-      setLinksList(linksList.filter((l) => l.slug !== slug));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete link');
-    }
-  };
-
-  const toggleUnread = async (link: LinkType) => {
-    try {
-      const updated = await linksApi.update(link.slug, {
-        is_unread: !link.is_unread,
-      });
-      setLinksList(linksList.map((l) => (l.id === link.id ? updated : l)));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update link');
-    }
-  };
-
-  const copyShortUrl = (slug: string) => {
-    const url = `${window.location.origin}/${slug}`;
-    navigator.clipboard.writeText(url);
-    alert('Short URL copied to clipboard!');
+  const handleRowClick = (slug: string) => {
+    navigate(`/links/${slug}`);
   };
 
   if (isLoading) {
@@ -75,13 +50,9 @@ export default function Links() {
 
   return (
     <div className="links-page">
-      <header className="page-header">
+      <header className="links-header">
         <h1>Links</h1>
-        <Link to="/links/new" className="btn-primary">Add Link</Link>
-      </header>
-
-      <div className="links-layout">
-        <aside className="links-sidebar">
+        <div className="links-toolbar">
           <form onSubmit={handleSearch} className="search-form">
             <input
               type="search"
@@ -92,120 +63,79 @@ export default function Links() {
             <button type="submit">Search</button>
           </form>
 
-          <div className="filter-section">
-            <h3>Filter</h3>
-            <label>
-              <input
-                type="checkbox"
-                checked={showUnread}
+          {allTags.length > 0 && (
+            <div className="tag-filter">
+              <select
+                value={currentTag || ''}
                 onChange={(e) => {
                   const params = new URLSearchParams(searchParams);
-                  if (e.target.checked) {
-                    params.set('unread', 'true');
+                  if (e.target.value) {
+                    params.set('tag', e.target.value);
                   } else {
-                    params.delete('unread');
+                    params.delete('tag');
                   }
                   setSearchParams(params);
                 }}
-              />
-              Unread only
-            </label>
-          </div>
-
-          <div className="tags-section">
-            <h3>Tags</h3>
-            {currentTag && (
-              <button
-                onClick={() => {
-                  const params = new URLSearchParams(searchParams);
-                  params.delete('tag');
-                  setSearchParams(params);
-                }}
-                className="clear-tag"
               >
-                Clear: {currentTag}
-              </button>
-            )}
-            <ul className="tag-list">
-              {allTags.map((tag) => (
-                <li key={tag.id}>
-                  <button
-                    onClick={() => {
-                      const params = new URLSearchParams(searchParams);
-                      params.set('tag', tag.name);
-                      setSearchParams(params);
-                    }}
-                    className={currentTag === tag.name ? 'active' : ''}
-                  >
+                <option value="">All tags</option>
+                {allTags.map((tag) => (
+                  <option key={tag.id} value={tag.name}>
                     {tag.name} ({tag.link_count})
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </aside>
-
-        <main className="links-main">
-          {linksList.length === 0 ? (
-            <p className="no-results">No links found.</p>
-          ) : (
-            <ul className="link-list">
-              {linksList.map((link) => (
-                <li key={link.id} className={`link-item ${link.is_unread ? 'unread' : ''}`}>
-                  <div className="link-header">
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="link-title"
-                    >
-                      {link.title || link.url}
-                    </a>
-                    <span className="link-visibility">
-                      {link.is_public ? 'Public' : 'Private'}
-                    </span>
-                  </div>
-
-                  <div className="link-meta">
-                    <span className="link-slug" onClick={() => copyShortUrl(link.slug)}>
-                      /{link.slug}
-                    </span>
-                    <span className="link-clicks">{link.click_count} clicks</span>
-                    <span className="link-date">
-                      {new Date(link.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  {link.description && (
-                    <p className="link-description">{link.description}</p>
-                  )}
-
-                  {link.tags && link.tags.length > 0 && (
-                    <div className="link-tags">
-                      {link.tags.map((tag) => (
-                        <span key={tag.id} className="tag">
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="link-actions">
-                    <button onClick={() => toggleUnread(link)}>
-                      {link.is_unread ? 'Mark Read' : 'Mark Unread'}
-                    </button>
-                    <Link to={`/links/${link.slug}/edit`}>Edit</Link>
-                    <button onClick={() => handleDelete(link.slug)} className="btn-danger">
-                      Delete
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
-        </main>
-      </div>
 
+          <Link to="/links/new" className="btn-primary">Add Link</Link>
+        </div>
+      </header>
+
+      <main className="links-main">
+        {linksList.length === 0 ? (
+          <p className="no-results">No links found.</p>
+        ) : (
+          <table className="links-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Slug</th>
+                <th>Clicks</th>
+                <th>Created</th>
+                <th>Tags</th>
+              </tr>
+            </thead>
+            <tbody>
+              {linksList.map((link) => (
+                <tr
+                  key={link.id}
+                  onClick={() => handleRowClick(link.slug)}
+                >
+                  <td className="links-table-title">
+                    <span className="link-title-text">{link.title || link.url}</span>
+                  </td>
+                  <td className="links-table-slug">/{link.slug}</td>
+                  <td className="links-table-clicks">{link.click_count}</td>
+                  <td className="links-table-date">
+                    {new Date(link.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="links-table-tags">
+                    {link.tags && link.tags.slice(0, 3).map((tag) => (
+                      <span key={tag.id} className="tag">{tag.name}</span>
+                    ))}
+                    {link.tags && link.tags.length > 3 && (
+                      <span className="tag-more">+{link.tags.length - 3}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <div className="links-count">
+          {linksList.length} link{linksList.length !== 1 ? 's' : ''}
+        </div>
+      </main>
     </div>
   );
 }
