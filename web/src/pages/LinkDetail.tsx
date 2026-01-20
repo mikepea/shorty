@@ -30,19 +30,6 @@ export default function LinkDetail() {
     }
   };
 
-  const toggleUnread = async () => {
-    if (!link || !slug) return;
-
-    try {
-      const updated = await linksApi.update(slug, {
-        is_unread: !link.is_unread,
-      });
-      setLink(updated);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update link');
-    }
-  };
-
   const copyShortUrl = () => {
     if (!link) return;
     const url = `${window.location.origin}/${link.slug}`;
@@ -104,12 +91,6 @@ export default function LinkDetail() {
         <section className="link-detail-meta">
           <h2>Details</h2>
           <dl>
-            <dt>Status</dt>
-            <dd>
-              <span className={`status-badge ${link.is_unread ? 'unread' : 'read'}`}>
-                {link.is_unread ? 'Unread' : 'Read'}
-              </span>
-            </dd>
             <dt>Visibility</dt>
             <dd>{link.is_public ? 'Public' : 'Private'}</dd>
             <dt>Clicks</dt>
@@ -143,9 +124,6 @@ export default function LinkDetail() {
         <section className="link-detail-actions">
           <h2>Actions</h2>
           <div className="action-buttons">
-            <button onClick={toggleUnread}>
-              {link.is_unread ? 'Mark as Read' : 'Mark as Unread'}
-            </button>
             <Link to={`/links/${link.slug}/edit`} className="btn-primary">
               Edit Link
             </Link>

@@ -14,7 +14,6 @@ export default function EditLink() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
-  const [isUnread, setIsUnread] = useState(false);
   const [tagsInput, setTagsInput] = useState('');
   const [originalLink, setOriginalLink] = useState<LinkType | null>(null);
 
@@ -28,7 +27,6 @@ export default function EditLink() {
         setTitle(link.title || '');
         setDescription(link.description || '');
         setIsPublic(link.is_public);
-        setIsUnread(link.is_unread);
         setTagsInput(link.tags?.map(t => t.name).join(', ') || '');
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load link'))
@@ -48,7 +46,6 @@ export default function EditLink() {
         title: title || undefined,
         description: description || undefined,
         is_public: isPublic,
-        is_unread: isUnread,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update link');
@@ -159,17 +156,6 @@ export default function EditLink() {
               onChange={(e) => setIsPublic(e.target.checked)}
             />
             Make this link public
-          </label>
-        </div>
-
-        <div className="form-group checkbox">
-          <label>
-            <input
-              type="checkbox"
-              checked={isUnread}
-              onChange={(e) => setIsUnread(e.target.checked)}
-            />
-            Mark as unread
           </label>
         </div>
 
