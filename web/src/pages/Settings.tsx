@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { apiKeys } from '../api/client';
+import { apiKeys, auth } from '../api/client';
 import type { APIKey, CreateAPIKeyResponse } from '../api/types';
 
 export default function Settings() {
@@ -11,6 +11,14 @@ export default function Settings() {
   const [isCreating, setIsCreating] = useState(false);
   const [newKey, setNewKey] = useState<CreateAPIKeyResponse | null>(null);
   const [error, setError] = useState('');
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     apiKeys.list()
@@ -58,6 +66,36 @@ export default function Settings() {
     alert('API key copied to clipboard!');
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    // Client-side validation
+    if (newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await auth.changePassword(currentPassword, newPassword);
+      setPasswordSuccess('Password changed successfully');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : 'Failed to change password');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="loading">Loading...</div>;
   }
@@ -86,6 +124,56 @@ export default function Settings() {
             </div>
           </div>
         </section>
+
+        {user?.has_password && (
+          <section className="password-section">
+            <h2>Change Password</h2>
+            <p className="section-description">
+              Update your account password.
+            </p>
+
+            {passwordError && <div className="error">{passwordError}</div>}
+            {passwordSuccess && <div className="success">{passwordSuccess}</div>}
+
+            <form onSubmit={handleChangePassword} className="password-form">
+              <div className="form-group">
+                <label htmlFor="current-password">Current Password</label>
+                <input
+                  id="current-password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="new-password">New Password</label>
+                <input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={8}
+                />
+                <small>Minimum 8 characters</small>
+              </div>
+              <div className="form-group">
+                <label htmlFor="confirm-password">Confirm New Password</label>
+                <input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <button type="submit" disabled={isChangingPassword}>
+                {isChangingPassword ? 'Changing...' : 'Change Password'}
+              </button>
+            </form>
+          </section>
+        )}
 
         <section className="api-keys-section">
           <h2>API Keys</h2>

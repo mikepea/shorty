@@ -264,3 +264,160 @@ func TestMeWithoutAuth(t *testing.T) {
 		t.Errorf("Expected status 401, got %d", resp.Code)
 	}
 }
+
+func TestChangePassword(t *testing.T) {
+	db := setupTestDB(t)
+	router := setupTestRouter(db)
+
+	// First register a user
+	registerBody := RegisterRequest{
+		Email:    "test@example.com",
+		Password: "password123",
+		Name:     "Test User",
+	}
+	jsonBody, _ := json.Marshal(registerBody)
+	req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	var authResponse AuthResponse
+	json.Unmarshal(resp.Body.Bytes(), &authResponse)
+
+	// Change password
+	changeBody := map[string]string{
+		"current_password": "password123",
+		"new_password":     "newpassword456",
+	}
+	jsonBody, _ = json.Marshal(changeBody)
+	req, _ = http.NewRequest("PUT", "/auth/password", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+authResponse.Token)
+	resp = httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d: %s", resp.Code, resp.Body.String())
+	}
+
+	// Verify old password no longer works
+	loginBody := LoginRequest{
+		Email:    "test@example.com",
+		Password: "password123",
+	}
+	jsonBody, _ = json.Marshal(loginBody)
+	req, _ = http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp = httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status 401 for old password, got %d", resp.Code)
+	}
+
+	// Verify new password works
+	loginBody = LoginRequest{
+		Email:    "test@example.com",
+		Password: "newpassword456",
+	}
+	jsonBody, _ = json.Marshal(loginBody)
+	req, _ = http.NewRequest("POST", "/auth/login", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp = httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusOK {
+		t.Errorf("Expected status 200 for new password, got %d: %s", resp.Code, resp.Body.String())
+	}
+}
+
+func TestChangePasswordWrongCurrent(t *testing.T) {
+	db := setupTestDB(t)
+	router := setupTestRouter(db)
+
+	// First register a user
+	registerBody := RegisterRequest{
+		Email:    "test@example.com",
+		Password: "password123",
+		Name:     "Test User",
+	}
+	jsonBody, _ := json.Marshal(registerBody)
+	req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	var authResponse AuthResponse
+	json.Unmarshal(resp.Body.Bytes(), &authResponse)
+
+	// Try to change password with wrong current password
+	changeBody := map[string]string{
+		"current_password": "wrongpassword",
+		"new_password":     "newpassword456",
+	}
+	jsonBody, _ = json.Marshal(changeBody)
+	req, _ = http.NewRequest("PUT", "/auth/password", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+authResponse.Token)
+	resp = httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status 401, got %d", resp.Code)
+	}
+}
+
+func TestChangePasswordTooShort(t *testing.T) {
+	db := setupTestDB(t)
+	router := setupTestRouter(db)
+
+	// First register a user
+	registerBody := RegisterRequest{
+		Email:    "test@example.com",
+		Password: "password123",
+		Name:     "Test User",
+	}
+	jsonBody, _ := json.Marshal(registerBody)
+	req, _ := http.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	var authResponse AuthResponse
+	json.Unmarshal(resp.Body.Bytes(), &authResponse)
+
+	// Try to change password with too short new password
+	changeBody := map[string]string{
+		"current_password": "password123",
+		"new_password":     "short",
+	}
+	jsonBody, _ = json.Marshal(changeBody)
+	req, _ = http.NewRequest("PUT", "/auth/password", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+authResponse.Token)
+	resp = httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", resp.Code)
+	}
+}
+
+func TestChangePasswordWithoutAuth(t *testing.T) {
+	db := setupTestDB(t)
+	router := setupTestRouter(db)
+
+	changeBody := map[string]string{
+		"current_password": "password123",
+		"new_password":     "newpassword456",
+	}
+	jsonBody, _ := json.Marshal(changeBody)
+	req, _ := http.NewRequest("PUT", "/auth/password", bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	router.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status 401, got %d", resp.Code)
+	}
+}
