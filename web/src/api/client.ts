@@ -75,6 +75,12 @@ export const auth = {
     request<{ message: string }>('/auth/logout', { method: 'POST' }),
 
   me: () => request<User>('/auth/me'),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ message: string }>('/auth/password', {
+      method: 'PUT',
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    }),
 };
 
 // Groups

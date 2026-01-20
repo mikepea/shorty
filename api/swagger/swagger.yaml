@@ -7,6 +7,17 @@ definitions:
       user:
         $ref: '#/definitions/auth.UserResponse'
     type: object
+  auth.ChangePasswordRequest:
+    properties:
+      current_password:
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+    required:
+    - current_password
+    - new_password
+    type: object
   auth.LoginRequest:
     properties:
       email:
@@ -35,6 +46,8 @@ definitions:
     properties:
       email:
         type: string
+      has_password:
+        type: boolean
       id:
         type: integer
       name:
@@ -213,6 +226,45 @@ paths:
       security:
       - BearerAuth: []
       summary: Get current user
+      tags:
+      - auth
+  /auth/password:
+    put:
+      consumes:
+      - application/json
+      description: Change the password for the authenticated user (requires existing
+        password)
+      parameters:
+      - description: Password change details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Validation error or SSO-only user
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Authentication required or wrong current password
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Change password
       tags:
       - auth
   /auth/register:
