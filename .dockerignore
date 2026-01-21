@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Build artifacts
+*.exe
+shorty-server
+
+# Database files
+*.db
+*.db-journal
+
+# Docs
+docs/
+*.md
+!web/*.md
+
+# Test files
+*_test.go
+tests/
+coverage.out
+
+# Frontend build (we build fresh in Docker)
+web/node_modules
+web/dist
+web/.vite
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# CI
+.github
