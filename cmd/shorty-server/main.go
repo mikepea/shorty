@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mikepea/shorty/pkg/shorty/admin"
@@ -156,6 +157,38 @@ func main() {
 
 		scimConfigHandler := scim.NewConfigHandler(database.GetDB(), baseURL)
 		scimConfigHandler.RegisterRoutes(scimGroup)
+	}
+
+	// Serve static frontend files if web/dist exists
+	webDistPath := "./web/dist"
+	if _, err := os.Stat(webDistPath); err == nil {
+		// Serve static assets (JS, CSS, images, etc.)
+		r.Static("/assets", filepath.Join(webDistPath, "assets"))
+
+		// Serve other static files at root (favicon, etc.)
+		r.StaticFile("/favicon.ico", filepath.Join(webDistPath, "favicon.ico"))
+		r.StaticFile("/robots.txt", filepath.Join(webDistPath, "robots.txt"))
+
+		// SPA fallback - serve index.html for frontend routes
+		indexHTML := filepath.Join(webDistPath, "index.html")
+		spaRoutes := []string{"/", "/login", "/register", "/dashboard", "/links", "/groups", "/settings", "/admin"}
+		for _, route := range spaRoutes {
+			route := route // capture loop variable
+			r.GET(route, func(c *gin.Context) {
+				c.File(indexHTML)
+			})
+		}
+		// Also handle sub-routes like /links/:slug
+		r.GET("/links/*path", func(c *gin.Context) {
+			c.File(indexHTML)
+		})
+		r.GET("/groups/*path", func(c *gin.Context) {
+			c.File(indexHTML)
+		})
+
+		log.Println("Serving frontend from ./web/dist")
+	} else {
+		log.Println("No frontend build found at ./web/dist - API only mode")
 	}
 
 	// Redirect routes (public, must be registered LAST to avoid conflicts)
