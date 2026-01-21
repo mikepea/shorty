@@ -10,6 +10,7 @@ services:
     volumes:
       - shorty_data:/data
     restart: unless-stopped
+    invalid_key_that_does_not_exist: true
 
 volumes:
   shorty_data:
