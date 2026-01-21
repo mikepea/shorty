@@ -4,28 +4,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=postgres://shorty:shorty@db:5432/shorty?sslmode=disable
+      - SHORTY_DB_PATH=/data/shorty.db
       - JWT_SECRET=change-me-in-production-use-openssl-rand-base64-32
       - SHORTY_BASE_URL=http://localhost:8080
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-
-  db:
-    image: postgres:16-alpine
-    environment:
-      - POSTGRES_USER=shorty
-      - POSTGRES_PASSWORD=shorty
-      - POSTGRES_DB=shorty
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U shorty"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - shorty_data:/data
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  shorty_data:

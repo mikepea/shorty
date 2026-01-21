@@ -35,8 +35,10 @@ WORKDIR /app
 # Install runtime dependencies
 RUN apk add --no-cache ca-certificates tzdata
 
-# Create non-root user
-RUN adduser -D -u 1000 shorty
+# Create non-root user and data directory
+RUN adduser -D -u 1000 shorty && \
+    mkdir -p /data && \
+    chown shorty:shorty /data
 USER shorty
 
 # Copy built artifacts
