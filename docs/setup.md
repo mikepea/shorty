@@ -74,6 +74,47 @@ When starting with a fresh database:
 - Email: `admin@shorty.local`
 - Password: `changeme`
 
+## Docker Setup (Alternative)
+
+You can run Shorty with Docker instead of installing Go and Node.js locally.
+
+### Prerequisites
+
+- Docker
+- Docker Compose
+
+### Quick Start
+
+```bash
+# Build and start
+docker-compose up -d
+
+# View logs
+docker-compose logs -f shorty
+
+# Stop
+docker-compose down
+```
+
+The app runs at `http://localhost:8080` with SQLite storage persisted in a Docker volume.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SHORTY_DB_PATH` | `/data/shorty.db` | SQLite database path |
+| `JWT_SECRET` | (set in compose) | Secret for JWT signing |
+| `SHORTY_BASE_URL` | `http://localhost:8080` | Base URL for generated links |
+| `PORT` | `8080` | Server port |
+| `GIN_MODE` | `release` | Gin framework mode |
+
+### Rebuilding After Code Changes
+
+```bash
+docker-compose build
+docker-compose up -d
+```
+
 ## Project Structure Overview
 
 ```
