@@ -77,3 +77,23 @@ This is a Go project with library/CLI separation and a React frontend:
 - GitHub Actions runs on all PRs and pushes to main
 - Tests must pass before merging
 - CI runs: unit tests, integration tests, Go builds, and React build
+
+## Documentation
+
+Developer documentation lives in `docs/` and should be kept up to date:
+
+| File | Content |
+|------|---------|
+| `docs/developer.md` | Index page linking to all dev guides |
+| `docs/setup.md` | Development environment setup |
+| `docs/backend.md` | Go backend development |
+| `docs/frontend.md` | React frontend development |
+| `docs/diagnosis.md` | Debugging and troubleshooting |
+
+**When to update docs:**
+- Adding new dependencies or tools → update `setup.md`
+- Adding new API endpoints or packages → update `backend.md`
+- Adding new frontend features or test patterns → update `frontend.md`
+- Adding new debugging techniques or common issues → update `diagnosis.md`
+
+Include doc updates in the same PR as the feature when possible.
