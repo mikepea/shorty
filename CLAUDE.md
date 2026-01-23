@@ -70,7 +70,45 @@ This is a Go project with library/CLI separation and a React frontend:
 - Run dev server: `cd web && npm run dev`
 - Build for production: `cd web && npm run build`
 - Vite proxies API requests to Go server in development
-- Each folder contains README files explaining the concepts
+- Run tests: `cd web && npm test`
+
+### React Beginner Context
+
+**The user is learning React.** When writing or modifying React code:
+
+1. **Add explanatory comments** that explain React concepts, not just what the code does:
+   - Explain hooks (useState, useEffect, useContext) when you use them
+   - Explain JSX patterns (conditional rendering, mapping, fragments)
+   - Explain TypeScript patterns (interfaces, generics, optional chaining)
+
+2. **Structure components clearly** with sections:
+   ```tsx
+   // ============================================================================
+   // State Management
+   // ============================================================================
+
+   // ============================================================================
+   // Effects
+   // ============================================================================
+
+   // ============================================================================
+   // Event Handlers
+   // ============================================================================
+
+   // ============================================================================
+   // Render
+   // ============================================================================
+   ```
+
+3. **Key patterns to explain when encountered:**
+   - Controlled inputs (value + onChange)
+   - Conditional rendering (`&&` and ternary)
+   - List rendering with `.map()` and keys
+   - Async operations in handlers (try/catch/finally)
+   - Custom hooks and context
+   - Event handling (preventDefault, e.target.value)
+
+4. **Keep comments up to date** when modifying commented code
 
 ## CI/CD
 
