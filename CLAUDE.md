@@ -61,6 +61,15 @@ This is a Go project with library/CLI separation and a React frontend:
 - Build CLI: `go build ./cmd/hn-scraper`
 - Build server: `go build ./cmd/hn-server`
 
+### Database IDs
+
+**Use CUIDs instead of sequential integers for entity IDs.** Sequential IDs have security/privacy issues:
+- Enumeration attacks (guessing valid IDs)
+- Information leakage (ID values reveal entity counts)
+- Predictability (attackers can guess future IDs)
+
+Note: Existing models use sequential integers (see issue #33 for migration plan). New models should use CUIDs from the start.
+
 ## REST API
 
 
