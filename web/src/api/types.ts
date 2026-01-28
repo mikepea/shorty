@@ -44,6 +44,38 @@ export interface AuthResponse {
 }
 
 // ============================================================================
+// Organization Types
+// ============================================================================
+
+/**
+ * An organization is the top-level container for multi-tenancy.
+ * Organizations scope SSO settings, SCIM provisioning, groups, and link slugs.
+ * Users can belong to multiple organizations.
+ */
+export interface Organization {
+  id: number;
+  name: string;
+  slug: string;              // URL-safe identifier (unique across all orgs)
+  is_global: boolean;        // True only for "Shorty Global" (the default org)
+  role?: 'admin' | 'member'; // User's role in this org (only in user-specific responses)
+  member_count?: number;     // Number of members (only in some responses)
+  created_at: string;
+}
+
+/**
+ * Represents a user's membership in an organization.
+ * Used in the organization members list.
+ */
+export interface OrganizationMember {
+  id: number;
+  user_id: number;
+  email: string;
+  name: string;
+  role: 'admin' | 'member';  // Admins can manage org settings and members
+  created_at: string;
+}
+
+// ============================================================================
 // Groups & Membership Types
 // ============================================================================
 

@@ -1241,3 +1241,229 @@ button:disabled {
     padding: 0.5rem;
   }
 }
+
+/* Organization Switcher */
+.org-switcher {
+  position: relative;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.org-switcher--loading {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+}
+
+.org-switcher--single {
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.org-switcher__toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.org-switcher__toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.org-switcher__name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.org-switcher__arrow {
+  font-size: 0.65rem;
+  margin-left: 0.5rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.org-switcher__menu {
+  position: absolute;
+  top: 100%;
+  left: 1rem;
+  right: 1rem;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0;
+  background: #252540;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  list-style: none;
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.org-switcher__option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.org-switcher__option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.org-switcher__option--selected {
+  background: rgba(92, 158, 255, 0.15);
+  color: #5c9eff;
+}
+
+.org-switcher__option--selected:hover {
+  background: rgba(92, 158, 255, 0.25);
+}
+
+.org-switcher__badge {
+  font-size: 0.7rem;
+  padding: 0.125rem 0.375rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Organizations Page */
+.orgs-page {
+  max-width: 900px;
+}
+
+.orgs-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.orgs-content section {
+  background: #1a1a2e;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.orgs-content h2 {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+  color: #fff;
+}
+
+.create-org-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.create-org-form input {
+  flex: 1;
+  min-width: 150px;
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+}
+
+.create-org-form input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.orgs-list {
+  list-style: none;
+}
+
+.org-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.org-item:last-child {
+  border-bottom: none;
+}
+
+.org-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.org-name {
+  font-weight: 500;
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.org-slug {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.org-meta {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  display: flex;
+  gap: 1rem;
+}
+
+.org-role-badge {
+  font-size: 0.7rem;
+  padding: 0.125rem 0.375rem;
+  background: rgba(92, 158, 255, 0.2);
+  color: #5c9eff;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.org-global-badge {
+  font-size: 0.7rem;
+  padding: 0.125rem 0.375rem;
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.org-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.org-actions button {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
