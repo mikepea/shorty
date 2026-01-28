@@ -20,6 +20,17 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
 	models.AutoMigrate(db)
+
+	// Create global organization (required for group creation)
+	globalOrg := models.Organization{
+		Name:     "Shorty Global",
+		Slug:     "shorty-global",
+		IsGlobal: true,
+	}
+	if err := db.Create(&globalOrg).Error; err != nil {
+		t.Fatalf("Failed to create global organization: %v", err)
+	}
+
 	return db
 }
 
@@ -34,6 +45,19 @@ func createTestUser(t *testing.T, db *gorm.DB, email string) models.User {
 	if err := db.Create(&user).Error; err != nil {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
+
+	// Add user to global organization
+	var globalOrg models.Organization
+	db.Where("is_global = ?", true).First(&globalOrg)
+	orgMembership := models.OrganizationMembership{
+		OrganizationID: globalOrg.ID,
+		UserID:         user.ID,
+		Role:           models.OrgRoleMember,
+	}
+	if err := db.Create(&orgMembership).Error; err != nil {
+		t.Fatalf("Failed to add user to global organization: %v", err)
+	}
+
 	return user
 }
 

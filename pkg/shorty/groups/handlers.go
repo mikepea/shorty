@@ -22,8 +22,9 @@ func NewHandler(db *gorm.DB) *Handler {
 
 // CreateGroupRequest represents the request to create a group
 type CreateGroupRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
+	Name           string `json:"name" binding:"required"`
+	Description    string `json:"description"`
+	OrganizationID uint   `json:"organization_id"` // Optional - defaults to org from context or global
 }
 
 // UpdateGroupRequest represents the request to update a group
@@ -95,12 +96,39 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
+	// Determine organization ID:
+	// 1. Use request body if provided
+	// 2. Use context if OrgMiddleware set it
+	// 3. Default to global organization
+	orgID := req.OrganizationID
+	if orgID == 0 {
+		if ctxOrgID, ok := auth.GetOrgID(c); ok {
+			orgID = ctxOrgID
+		} else {
+			// Fall back to global organization
+			var globalOrg models.Organization
+			if err := h.db.Where("is_global = ?", true).First(&globalOrg).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Organization not found"})
+				return
+			}
+			orgID = globalOrg.ID
+		}
+	}
+
+	// Verify user is a member of the target organization
+	var orgMembership models.OrganizationMembership
+	if err := h.db.Where("user_id = ? AND organization_id = ?", userID, orgID).First(&orgMembership).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Not a member of this organization"})
+		return
+	}
+
 	// Create group in a transaction
 	var group models.Group
 	err := h.db.Transaction(func(tx *gorm.DB) error {
 		group = models.Group{
-			Name:        req.Name,
-			Description: req.Description,
+			OrganizationID: orgID,
+			Name:           req.Name,
+			Description:    req.Description,
 		}
 		if err := tx.Create(&group).Error; err != nil {
 			return err
