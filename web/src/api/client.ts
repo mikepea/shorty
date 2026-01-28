@@ -19,6 +19,8 @@
 
 import type {
   User,
+  Organization,
+  OrganizationMember,
   Group,
   GroupMembership,
   Link,
@@ -38,6 +40,33 @@ import type {
 
 // Base URL for all API calls. In development, Vite proxies /api to the Go server.
 const API_BASE = '/api';
+
+// Key used to store the current organization ID in localStorage
+const ORG_STORAGE_KEY = 'current_org_id';
+
+/**
+ * Get the currently selected organization ID from localStorage.
+ * Returns null if no organization is selected or if the stored value is invalid.
+ */
+export function getCurrentOrgId(): number | null {
+  const stored = localStorage.getItem(ORG_STORAGE_KEY);
+  if (!stored) return null;
+  const parsed = parseInt(stored, 10);
+  // Handle NaN from corrupted/tampered localStorage
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+/**
+ * Set the current organization ID in localStorage.
+ * This will be sent with all API requests via the X-Organization-ID header.
+ */
+export function setCurrentOrgId(orgId: number | null): void {
+  if (orgId === null) {
+    localStorage.removeItem(ORG_STORAGE_KEY);
+  } else {
+    localStorage.setItem(ORG_STORAGE_KEY, orgId.toString());
+  }
+}
 
 /**
  * Custom error class for API errors.
@@ -75,6 +104,9 @@ async function request<T>(
   // Get the JWT token from localStorage (set during login)
   const token = localStorage.getItem('token');
 
+  // Get the current organization ID from localStorage
+  const orgId = getCurrentOrgId();
+
   // Set up headers - always send JSON
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -85,6 +117,12 @@ async function request<T>(
   // The "Bearer" prefix is a standard convention for JWT tokens
   if (token) {
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
+
+  // If we have an organization selected, include it in the request
+  // This tells the backend which organization context to use
+  if (orgId) {
+    (headers as Record<string, string>)['X-Organization-ID'] = orgId.toString();
   }
 
   // Make the actual HTTP request
@@ -154,6 +192,67 @@ export const auth = {
     request<{ message: string }>('/auth/password', {
       method: 'PUT',
       body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    }),
+};
+
+// ============================================================================
+// Organizations API
+// ============================================================================
+
+/**
+ * Organization management API calls.
+ *
+ * Organizations are the top-level container for multi-tenancy. They scope
+ * SSO settings, SCIM provisioning, groups, and link slugs. Users can belong
+ * to multiple organizations and switch between them.
+ */
+export const organizations = {
+  /** Get all organizations the current user is a member of. */
+  list: () => request<Organization[]>('/organizations'),
+
+  /** Get a specific organization by ID. */
+  get: (id: number) => request<Organization>(`/organizations/${id}`),
+
+  /** Create a new organization. The creator becomes an admin. */
+  create: (name: string, slug: string) =>
+    request<Organization>('/organizations', {
+      method: 'POST',
+      body: JSON.stringify({ name, slug }),
+    }),
+
+  /** Update an organization's name (admin only). */
+  update: (id: number, name: string) =>
+    request<Organization>(`/organizations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name }),
+    }),
+
+  /** Delete an organization (admin only). Cannot delete the global org. */
+  delete: (id: number) =>
+    request<{ message: string }>(`/organizations/${id}`, { method: 'DELETE' }),
+
+  /** Get all members of an organization. */
+  listMembers: (id: number) =>
+    request<OrganizationMember[]>(`/organizations/${id}/members`),
+
+  /** Add a user to an organization by their email (admin only). */
+  addMember: (orgId: number, email: string, role: 'admin' | 'member') =>
+    request<OrganizationMember>(`/organizations/${orgId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ email, role }),
+    }),
+
+  /** Change a member's role in an organization (admin only). */
+  updateMember: (orgId: number, userId: number, role: 'admin' | 'member') =>
+    request<OrganizationMember>(`/organizations/${orgId}/members/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    }),
+
+  /** Remove a member from an organization (admin only). */
+  removeMember: (orgId: number, userId: number) =>
+    request<{ message: string }>(`/organizations/${orgId}/members/${userId}`, {
+      method: 'DELETE',
     }),
 };
 

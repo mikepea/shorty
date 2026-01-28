@@ -15,6 +15,7 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { OrganizationProvider } from './context/OrganizationContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -24,6 +25,7 @@ import LinkDetail from './pages/LinkDetail';
 import AddLink from './pages/AddLink';
 import EditLink from './pages/EditLink';
 import Groups from './pages/Groups';
+import Organizations from './pages/Organizations';
 import Settings from './pages/Settings';
 import Admin from './pages/Admin';
 import SSOCallback from './pages/SSOCallback';
@@ -167,6 +169,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/organizations"
+        element={
+          <ProtectedRoute>
+            <Organizations />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/settings"
         element={
           <ProtectedRoute>
@@ -206,7 +216,11 @@ function App() {
     <BrowserRouter>
       {/* AuthProvider must wrap everything that uses useAuth() */}
       <AuthProvider>
-        <AppRoutes />
+        {/* OrganizationProvider manages current org state, must be inside AuthProvider
+            because it needs to know when the user logs in/out */}
+        <OrganizationProvider>
+          <AppRoutes />
+        </OrganizationProvider>
       </AuthProvider>
     </BrowserRouter>
   );

@@ -13,6 +13,7 @@
 
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import OrgSwitcher from './OrgSwitcher';
 
 /**
  * Sidebar component - displays navigation and user info.
@@ -45,6 +46,9 @@ export default function Sidebar() {
         <h1>Shorty</h1>
       </div>
 
+      {/* Organization switcher - allows users to switch between their orgs */}
+      <OrgSwitcher />
+
       {/* Navigation links */}
       <nav className="sidebar-nav">
         {/*
@@ -57,6 +61,7 @@ export default function Sidebar() {
         <NavLink to="/links">Links</NavLink>
         <NavLink to="/links/new">Add Link</NavLink>
         <NavLink to="/groups">Groups</NavLink>
+        <NavLink to="/organizations">Organizations</NavLink>
         <NavLink to="/settings">Settings</NavLink>
 
         {/*
