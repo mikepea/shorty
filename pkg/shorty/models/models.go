@@ -3,8 +3,12 @@ package models
 import "gorm.io/gorm"
 
 // AllModels returns all models for migration
+// Note: Organization must be migrated first as other models depend on it
 func AllModels() []interface{} {
 	return []interface{}{
+		&Organization{},
+		&OrganizationMembership{},
+		&OrganizationDomain{},
 		&User{},
 		&Group{},
 		&GroupMembership{},
