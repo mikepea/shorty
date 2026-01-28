@@ -46,11 +46,14 @@ const ORG_STORAGE_KEY = 'current_org_id';
 
 /**
  * Get the currently selected organization ID from localStorage.
- * Returns null if no organization is selected.
+ * Returns null if no organization is selected or if the stored value is invalid.
  */
 export function getCurrentOrgId(): number | null {
   const stored = localStorage.getItem(ORG_STORAGE_KEY);
-  return stored ? parseInt(stored, 10) : null;
+  if (!stored) return null;
+  const parsed = parseInt(stored, 10);
+  // Handle NaN from corrupted/tampered localStorage
+  return Number.isNaN(parsed) ? null : parsed;
 }
 
 /**

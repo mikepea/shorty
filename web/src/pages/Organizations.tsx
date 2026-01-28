@@ -13,7 +13,7 @@
  * - Conditional rendering based on user's role in each org
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { organizations as orgsApi, type Organization, type OrganizationMember } from '../api';
 import { useOrganization } from '../context/OrganizationContext';
 import { useAuth } from '../context/AuthContext';
@@ -43,8 +43,32 @@ export default function Organizations() {
   // Loading and error states
   const [isCreating, setIsCreating] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
+  const [isRemovingMember, setIsRemovingMember] = useState<number | null>(null); // Track which member is being removed
+  const [isUpdatingRole, setIsUpdatingRole] = useState<number | null>(null); // Track which member's role is being updated
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // ============================================================================
+  // Event Handlers (defined before effects that use them)
+  // ============================================================================
+
+  /**
+   * Load members for an organization.
+   * useCallback memoizes the function so it doesn't change on every render,
+   * which allows us to safely include it in useEffect dependency arrays.
+   */
+  const loadMembers = useCallback(async (orgId: number) => {
+    setLoadingMembers(true);
+    setError('');
+    try {
+      const memberList = await orgsApi.listMembers(orgId);
+      setMembers(memberList);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load members');
+    } finally {
+      setLoadingMembers(false);
+    }
+  }, []);
 
   // ============================================================================
   // Effects
@@ -57,10 +81,10 @@ export default function Organizations() {
     if (selectedOrgId) {
       loadMembers(selectedOrgId);
     }
-  }, [selectedOrgId]);
+  }, [selectedOrgId, loadMembers]);
 
   // ============================================================================
-  // Event Handlers
+  // More Event Handlers
   // ============================================================================
 
   /**
@@ -104,21 +128,6 @@ export default function Organizations() {
   };
 
   /**
-   * Load members for an organization.
-   */
-  const loadMembers = async (orgId: number) => {
-    setLoadingMembers(true);
-    try {
-      const memberList = await orgsApi.listMembers(orgId);
-      setMembers(memberList);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load members');
-    } finally {
-      setLoadingMembers(false);
-    }
-  };
-
-  /**
    * Add a member to an organization.
    */
   const handleAddMember = async (e: React.FormEvent) => {
@@ -127,6 +136,7 @@ export default function Organizations() {
 
     setIsAddingMember(true);
     setError('');
+    setSuccess('');
 
     try {
       await orgsApi.addMember(selectedOrgId, newMemberEmail.trim(), newMemberRole);
@@ -146,7 +156,12 @@ export default function Organizations() {
    */
   const handleRemoveMember = async (userId: number) => {
     if (!selectedOrgId) return;
+    if (isRemovingMember !== null) return; // Prevent double-clicks
     if (!confirm('Are you sure you want to remove this member?')) return;
+
+    setIsRemovingMember(userId);
+    setError('');
+    setSuccess('');
 
     try {
       await orgsApi.removeMember(selectedOrgId, userId);
@@ -154,6 +169,8 @@ export default function Organizations() {
       setSuccess('Member removed successfully!');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove member');
+    } finally {
+      setIsRemovingMember(null);
     }
   };
 
@@ -162,12 +179,20 @@ export default function Organizations() {
    */
   const handleUpdateRole = async (userId: number, role: 'admin' | 'member') => {
     if (!selectedOrgId) return;
+    if (isUpdatingRole !== null) return; // Prevent double-clicks
+
+    setIsUpdatingRole(userId);
+    setError('');
+    setSuccess('');
 
     try {
       await orgsApi.updateMember(selectedOrgId, userId, role);
       await loadMembers(selectedOrgId);
+      setSuccess('Role updated successfully!');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update role');
+    } finally {
+      setIsUpdatingRole(null);
     }
   };
 
@@ -332,6 +357,7 @@ export default function Organizations() {
                         <select
                           value={member.role}
                           onChange={(e) => handleUpdateRole(member.user_id, e.target.value as 'admin' | 'member')}
+                          disabled={isUpdatingRole === member.user_id}
                         >
                           <option value="member">Member</option>
                           <option value="admin">Admin</option>
@@ -339,8 +365,9 @@ export default function Organizations() {
                         <button
                           className="btn-danger"
                           onClick={() => handleRemoveMember(member.user_id)}
+                          disabled={isRemovingMember === member.user_id}
                         >
-                          Remove
+                          {isRemovingMember === member.user_id ? 'Removing...' : 'Remove'}
                         </button>
                       </div>
                     )}
