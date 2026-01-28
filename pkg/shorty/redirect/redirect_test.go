@@ -13,7 +13,8 @@ import (
 )
 
 func setupTestDB(t *testing.T) *gorm.DB {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	// Use shared cache mode to prevent DB from being GC'd when goroutines use separate connections
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
@@ -21,9 +22,13 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-// createGlobalOrg creates the global organization needed for redirect tests
+// createGlobalOrg creates or returns the existing global organization for redirect tests
 func createGlobalOrg(t *testing.T, db *gorm.DB) models.Organization {
-	globalOrg := models.Organization{
+	var globalOrg models.Organization
+	if err := db.Where("is_global = ?", true).First(&globalOrg).Error; err == nil {
+		return globalOrg
+	}
+	globalOrg = models.Organization{
 		Name:     "Shorty Global",
 		Slug:     "shorty-global",
 		IsGlobal: true,
