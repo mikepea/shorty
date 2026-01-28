@@ -26,6 +26,19 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
+// createGlobalOrg creates the global organization for tests
+func createGlobalOrg(t *testing.T, db *gorm.DB) *models.Organization {
+	org := &models.Organization{
+		Name:     "Shorty Global",
+		Slug:     "shorty-global",
+		IsGlobal: true,
+	}
+	if err := db.Create(org).Error; err != nil {
+		t.Fatalf("Failed to create global organization: %v", err)
+	}
+	return org
+}
+
 func setupTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	return gin.New()
@@ -363,8 +376,9 @@ func TestGetServiceProviderConfig(t *testing.T) {
 
 func TestSCIMTokenGeneration(t *testing.T) {
 	db := setupTestDB(t)
+	org := createGlobalOrg(t, db)
 
-	token, scimToken, err := GenerateSCIMToken(db, "Test Token")
+	token, scimToken, err := GenerateSCIMToken(db, org.ID, "Test Token")
 	if err != nil {
 		t.Fatalf("Failed to generate token: %v", err)
 	}
@@ -375,6 +389,10 @@ func TestSCIMTokenGeneration(t *testing.T) {
 
 	if scimToken.TokenPrefix != token[:8] {
 		t.Errorf("Expected token prefix %s, got %s", token[:8], scimToken.TokenPrefix)
+	}
+
+	if scimToken.OrganizationID != org.ID {
+		t.Errorf("Expected organization ID %d, got %d", org.ID, scimToken.OrganizationID)
 	}
 
 	// Validate the token
@@ -391,8 +409,9 @@ func TestSCIMTokenGeneration(t *testing.T) {
 func TestSCIMAuthMiddleware(t *testing.T) {
 	db := setupTestDB(t)
 	r := setupTestRouter()
+	org := createGlobalOrg(t, db)
 
-	token, _, _ := GenerateSCIMToken(db, "Test Token")
+	token, _, _ := GenerateSCIMToken(db, org.ID, "Test Token")
 
 	r.Use(SCIMAuthMiddleware(db))
 	r.GET("/test", func(c *gin.Context) {

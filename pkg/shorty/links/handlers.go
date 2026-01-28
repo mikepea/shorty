@@ -86,8 +86,13 @@ func (e *ValidationError) Error() string {
 	return e.Message
 }
 
-// validateSlug checks if a slug is valid and available
+// validateSlug checks if a slug is valid and available (deprecated - use validateSlugForOrg)
 func (h *Handler) validateSlug(slug string, excludeID uint) error {
+	return h.validateSlugForOrg(slug, excludeID, 0)
+}
+
+// validateSlugForOrg checks if a slug is valid and available within an organization
+func (h *Handler) validateSlugForOrg(slug string, excludeID uint, orgID uint) error {
 	if slug == "" {
 		return nil
 	}
@@ -105,9 +110,9 @@ func (h *Handler) validateSlug(slug string, excludeID uint) error {
 		}
 	}
 
-	// Check uniqueness
+	// Check uniqueness within organization
 	var existing models.Link
-	query := h.db.Where("slug = ?", slug)
+	query := h.db.Where("organization_id = ? AND slug = ?", orgID, slug)
 	if excludeID > 0 {
 		query = query.Where("id != ?", excludeID)
 	}
@@ -128,15 +133,20 @@ func generateRandomString(length int, charset string) string {
 	return string(b)
 }
 
-// generateSlug creates a unique slug
+// generateSlug creates a unique slug (deprecated - use generateSlugForOrg)
 func (h *Handler) generateSlug() string {
+	return h.generateSlugForOrg(0)
+}
+
+// generateSlugForOrg creates a unique slug within an organization
+func (h *Handler) generateSlugForOrg(orgID uint) string {
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 	const length = 8
 
 	for attempts := 0; attempts < 10; attempts++ {
 		slug := generateRandomString(length, charset)
 		var existing models.Link
-		if err := h.db.Where("slug = ?", slug).First(&existing).Error; err != nil {
+		if err := h.db.Where("organization_id = ? AND slug = ?", orgID, slug).First(&existing).Error; err != nil {
 			return slug
 		}
 	}
@@ -232,32 +242,40 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
+	// Get the group to find its organization
+	var group models.Group
+	if err := h.db.First(&group, groupID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})
+		return
+	}
+
 	var req CreateLinkRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Handle slug
+	// Handle slug - now scoped to organization
 	slug := req.Slug
 	if slug == "" {
-		slug = h.generateSlug()
+		slug = h.generateSlugForOrg(group.OrganizationID)
 	} else {
-		if err := h.validateSlug(slug, 0); err != nil {
+		if err := h.validateSlugForOrg(slug, 0, group.OrganizationID); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 	}
 
 	link := models.Link{
-		GroupID:     uint(groupID),
-		CreatedByID: userID,
-		Slug:        slug,
-		URL:         req.URL,
-		Title:       req.Title,
-		Description: req.Description,
-		IsPublic:    req.IsPublic,
-		IsUnread:    req.IsUnread,
+		OrganizationID: group.OrganizationID,
+		GroupID:        uint(groupID),
+		CreatedByID:    userID,
+		Slug:           slug,
+		URL:            req.URL,
+		Title:          req.Title,
+		Description:    req.Description,
+		IsPublic:       req.IsPublic,
+		IsUnread:       req.IsUnread,
 	}
 
 	if err := h.db.Create(&link).Error; err != nil {

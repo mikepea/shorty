@@ -15,11 +15,13 @@ import (
 	"github.com/mikepea/shorty/pkg/shorty/links"
 	"github.com/mikepea/shorty/pkg/shorty/models"
 	"github.com/mikepea/shorty/pkg/shorty/oidc"
+	"github.com/mikepea/shorty/pkg/shorty/organizations"
 	"github.com/mikepea/shorty/pkg/shorty/redirect"
 	"github.com/mikepea/shorty/pkg/shorty/scim"
 	"github.com/mikepea/shorty/pkg/shorty/tags"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gorm.io/gorm"
 
 	_ "github.com/mikepea/shorty/api/swagger"
 )
@@ -65,8 +67,14 @@ func main() {
 	}
 	log.Println("Database migrations completed")
 
+	// Ensure the global organization exists (must run before admin creation)
+	globalOrg, err := ensureGlobalOrgExists()
+	if err != nil {
+		log.Fatalf("Failed to ensure global organization exists: %v", err)
+	}
+
 	// Create default admin user if no admin exists
-	if err := ensureAdminExists(); err != nil {
+	if err := ensureAdminExists(globalOrg); err != nil {
 		log.Fatalf("Failed to ensure admin user exists: %v", err)
 	}
 
@@ -109,6 +117,13 @@ func main() {
 		// API keys routes (JWT only - need to be logged in to manage keys)
 		apiKeysHandler := apikeys.NewHandler(database.GetDB())
 		apiKeysHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
+
+		// Organizations routes (protected - accepts JWT or API key)
+		orgsHandler := organizations.NewHandler(database.GetDB())
+		orgsGroup := api.Group("/organizations")
+		orgsGroup.Use(combinedAuth)
+		orgsHandler.RegisterRoutes(orgsGroup)
+		orgsHandler.RegisterMemberRoutes(orgsGroup)
 
 		// Groups routes (protected - accepts JWT or API key)
 		groupsHandler := groups.NewHandler(database.GetDB())
@@ -207,8 +222,74 @@ func main() {
 	}
 }
 
-// ensureAdminExists creates a default admin user if no admin exists in the database
-func ensureAdminExists() error {
+// ensureGlobalOrgExists creates the "Shorty Global" organization if it doesn't exist.
+// This organization serves as the default for public signups and unrecognized domains.
+// Returns the global organization.
+func ensureGlobalOrgExists() (*models.Organization, error) {
+	db := database.GetDB()
+
+	// Check if global org already exists
+	var globalOrg models.Organization
+	err := db.Where("is_global = ?", true).First(&globalOrg).Error
+	if err == nil {
+		return &globalOrg, nil // Already exists
+	}
+
+	// Create the global organization
+	globalOrg = models.Organization{
+		Name:     "Shorty Global",
+		Slug:     "shorty-global",
+		IsGlobal: true,
+	}
+
+	if err := db.Create(&globalOrg).Error; err != nil {
+		return nil, err
+	}
+
+	log.Printf("Created global organization: %s (ID: %d)", globalOrg.Name, globalOrg.ID)
+
+	// Migrate any existing data to the global organization
+	if err := migrateExistingDataToGlobalOrg(db, globalOrg.ID); err != nil {
+		log.Printf("Warning: Error migrating existing data to global org: %v", err)
+	}
+
+	return &globalOrg, nil
+}
+
+// migrateExistingDataToGlobalOrg assigns any existing groups, links, OIDC providers,
+// and SCIM tokens without an organization to the global organization.
+// This handles upgrades from pre-multi-tenancy versions.
+func migrateExistingDataToGlobalOrg(db *gorm.DB, globalOrgID uint) error {
+	// Migrate groups without an organization
+	if err := db.Model(&models.Group{}).Where("organization_id = 0 OR organization_id IS NULL").
+		Update("organization_id", globalOrgID).Error; err != nil {
+		return err
+	}
+
+	// Migrate links without an organization
+	if err := db.Model(&models.Link{}).Where("organization_id = 0 OR organization_id IS NULL").
+		Update("organization_id", globalOrgID).Error; err != nil {
+		return err
+	}
+
+	// Migrate OIDC providers without an organization
+	if err := db.Model(&models.OIDCProvider{}).Where("organization_id = 0 OR organization_id IS NULL").
+		Update("organization_id", globalOrgID).Error; err != nil {
+		return err
+	}
+
+	// Migrate SCIM tokens without an organization
+	if err := db.Model(&models.SCIMToken{}).Where("organization_id = 0 OR organization_id IS NULL").
+		Update("organization_id", globalOrgID).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ensureAdminExists creates a default admin user if no admin exists in the database.
+// The admin is added to the global organization.
+func ensureAdminExists(globalOrg *models.Organization) error {
 	db := database.GetDB()
 
 	// Check if any admin user exists
@@ -238,22 +319,33 @@ func ensureAdminExists() error {
 		return err
 	}
 
-	// Create personal group for admin
+	// Add admin to global organization as admin
+	orgMembership := models.OrganizationMembership{
+		OrganizationID: globalOrg.ID,
+		UserID:         adminUser.ID,
+		Role:           models.OrgRoleAdmin,
+	}
+	if err := db.Create(&orgMembership).Error; err != nil {
+		return err
+	}
+
+	// Create personal group for admin within the global organization
 	personalGroup := models.Group{
-		Name:        "Admin's Links",
-		Description: "Personal links for Admin",
+		OrganizationID: globalOrg.ID,
+		Name:           "Admin's Links",
+		Description:    "Personal links for Admin",
 	}
 	if err := db.Create(&personalGroup).Error; err != nil {
 		return err
 	}
 
 	// Add admin as admin of personal group
-	membership := models.GroupMembership{
+	groupMembership := models.GroupMembership{
 		UserID:  adminUser.ID,
 		GroupID: personalGroup.ID,
 		Role:    models.GroupRoleAdmin,
 	}
-	if err := db.Create(&membership).Error; err != nil {
+	if err := db.Create(&groupMembership).Error; err != nil {
 		return err
 	}
 

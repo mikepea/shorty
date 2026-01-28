@@ -27,6 +27,17 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	if err := models.AutoMigrate(db); err != nil {
 		t.Fatalf("Failed to run migrations: %v", err)
 	}
+
+	// Create the global organization (required for redirect functionality)
+	globalOrg := models.Organization{
+		Name:     "Shorty Global",
+		Slug:     "shorty-global",
+		IsGlobal: true,
+	}
+	if err := db.Create(&globalOrg).Error; err != nil {
+		t.Fatalf("Failed to create global organization: %v", err)
+	}
+
 	return db
 }
 

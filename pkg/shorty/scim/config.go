@@ -156,8 +156,8 @@ func (h *ConfigHandler) RegisterRoutes(rg *gin.RouterGroup) {
 
 // SCIM Token management
 
-// GenerateSCIMToken creates a new SCIM bearer token
-func GenerateSCIMToken(db *gorm.DB, description string) (string, *models.SCIMToken, error) {
+// GenerateSCIMToken creates a new SCIM bearer token for an organization
+func GenerateSCIMToken(db *gorm.DB, organizationID uint, description string) (string, *models.SCIMToken, error) {
 	// Generate random token
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
@@ -170,9 +170,10 @@ func GenerateSCIMToken(db *gorm.DB, description string) (string, *models.SCIMTok
 	tokenHash := hex.EncodeToString(hash[:])
 
 	scimToken := &models.SCIMToken{
-		TokenHash:   tokenHash,
-		TokenPrefix: token[:8],
-		Description: description,
+		OrganizationID: organizationID,
+		TokenHash:      tokenHash,
+		TokenPrefix:    token[:8],
+		Description:    description,
 	}
 
 	if err := db.Create(scimToken).Error; err != nil {
@@ -201,7 +202,11 @@ func ValidateSCIMToken(db *gorm.DB, token string) (*models.SCIMToken, error) {
 	return &scimToken, nil
 }
 
+// Context key for SCIM organization ID
+const ContextKeySCIMOrgID = "scim_organization_id"
+
 // SCIMAuthMiddleware authenticates SCIM requests using bearer tokens
+// and sets the organization context from the token
 func SCIMAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -227,7 +232,7 @@ func SCIMAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		token := parts[1]
-		_, err := ValidateSCIMToken(db, token)
+		scimToken, err := ValidateSCIMToken(db, token)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, ErrorResponse{
 				Schemas: []string{SchemaError},
@@ -238,8 +243,20 @@ func SCIMAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		// Set organization context from token
+		c.Set(ContextKeySCIMOrgID, scimToken.OrganizationID)
+
 		c.Next()
 	}
+}
+
+// GetSCIMOrgID returns the organization ID from SCIM context
+func GetSCIMOrgID(c *gin.Context) (uint, bool) {
+	orgID, exists := c.Get(ContextKeySCIMOrgID)
+	if !exists {
+		return 0, false
+	}
+	return orgID.(uint), true
 }
 
 // TokenResponse represents a SCIM token in API responses
@@ -289,17 +306,28 @@ func (h *TokenHandler) ListTokens(c *gin.Context) {
 	c.JSON(http.StatusOK, responses)
 }
 
-// CreateTokenRequest represents a request to create a SCIM token
+// CreateTokenRequest represents a request to create a SCIM token with organization
 type CreateTokenRequest struct {
-	Description string `json:"description"`
+	OrganizationID uint   `json:"organization_id" binding:"required"`
+	Description    string `json:"description"`
 }
 
-// CreateToken creates a new SCIM token
+// CreateToken creates a new SCIM token for an organization
 func (h *TokenHandler) CreateToken(c *gin.Context) {
 	var req CreateTokenRequest
-	c.ShouldBindJSON(&req)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	token, scimToken, err := GenerateSCIMToken(h.db, req.Description)
+	// Verify organization exists
+	var org models.Organization
+	if err := h.db.First(&org, req.OrganizationID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
+		return
+	}
+
+	token, scimToken, err := GenerateSCIMToken(h.db, req.OrganizationID, req.Description)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token"})
 		return

@@ -30,7 +30,8 @@ type User struct {
 	SystemRole   SystemRole     `gorm:"type:varchar(20);default:'user'" json:"system_role"`
 
 	// Relationships
-	GroupMemberships []GroupMembership `gorm:"foreignKey:UserID" json:"group_memberships,omitempty"`
-	APIKeys          []APIKey          `gorm:"foreignKey:UserID" json:"api_keys,omitempty"`
-	OIDCIdentities   []OIDCIdentity    `gorm:"foreignKey:UserID" json:"oidc_identities,omitempty"`
+	OrganizationMemberships []OrganizationMembership `gorm:"foreignKey:UserID" json:"organization_memberships,omitempty"`
+	GroupMemberships        []GroupMembership        `gorm:"foreignKey:UserID" json:"group_memberships,omitempty"`
+	APIKeys                 []APIKey                 `gorm:"foreignKey:UserID" json:"api_keys,omitempty"`
+	OIDCIdentities          []OIDCIdentity           `gorm:"foreignKey:UserID" json:"oidc_identities,omitempty"`
 }
