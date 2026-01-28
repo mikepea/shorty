@@ -15,6 +15,7 @@ import (
 	"github.com/mikepea/shorty/pkg/shorty/links"
 	"github.com/mikepea/shorty/pkg/shorty/models"
 	"github.com/mikepea/shorty/pkg/shorty/oidc"
+	"github.com/mikepea/shorty/pkg/shorty/organizations"
 	"github.com/mikepea/shorty/pkg/shorty/redirect"
 	"github.com/mikepea/shorty/pkg/shorty/scim"
 	"github.com/mikepea/shorty/pkg/shorty/tags"
@@ -116,6 +117,13 @@ func main() {
 		// API keys routes (JWT only - need to be logged in to manage keys)
 		apiKeysHandler := apikeys.NewHandler(database.GetDB())
 		apiKeysHandler.RegisterRoutes(api.Group("", auth.AuthMiddleware()))
+
+		// Organizations routes (protected - accepts JWT or API key)
+		orgsHandler := organizations.NewHandler(database.GetDB())
+		orgsGroup := api.Group("/organizations")
+		orgsGroup.Use(combinedAuth)
+		orgsHandler.RegisterRoutes(orgsGroup)
+		orgsHandler.RegisterMemberRoutes(orgsGroup)
 
 		// Groups routes (protected - accepts JWT or API key)
 		groupsHandler := groups.NewHandler(database.GetDB())
