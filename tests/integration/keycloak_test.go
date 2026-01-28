@@ -57,6 +57,20 @@ func setupKeycloakTestDB(t *testing.T) *gorm.DB {
 	if err := models.AutoMigrate(db); err != nil {
 		t.Fatalf("Failed to run migrations: %v", err)
 	}
+
+	// Create the global organization if it doesn't exist (required for SCIM and redirect functionality)
+	var existingOrg models.Organization
+	if err := db.Where("is_global = ?", true).First(&existingOrg).Error; err != nil {
+		globalOrg := models.Organization{
+			Name:     "Shorty Global",
+			Slug:     "shorty-global",
+			IsGlobal: true,
+		}
+		if err := db.Create(&globalOrg).Error; err != nil {
+			t.Fatalf("Failed to create global organization: %v", err)
+		}
+	}
+
 	return db
 }
 
@@ -432,9 +446,9 @@ func TestSCIMIntegration(t *testing.T) {
 
 	var scimToken string
 
-	// Create SCIM token
+	// Create SCIM token (organization_id 1 is the global org created in setup)
 	t.Run("CreateSCIMToken", func(t *testing.T) {
-		body := `{"description":"Integration Test Token"}`
+		body := `{"organization_id":1,"description":"Integration Test Token"}`
 		req, _ := http.NewRequest("POST", "/api/admin/scim-tokens", strings.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+adminToken)
 		req.Header.Set("Content-Type", "application/json")
