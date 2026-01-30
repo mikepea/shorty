@@ -121,7 +121,8 @@ async function request<T>(
 
   // If we have an organization selected, include it in the request
   // This tells the backend which organization context to use
-  if (orgId) {
+  // Use explicit null check rather than truthy check for clarity
+  if (orgId !== null) {
     (headers as Record<string, string>)['X-Organization-ID'] = orgId;
   }
 
