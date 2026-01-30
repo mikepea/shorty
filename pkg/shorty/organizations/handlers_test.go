@@ -151,7 +151,7 @@ func TestGetOrganization(t *testing.T) {
 	}
 	db.Create(&membership)
 
-	req, _ := http.NewRequest("GET", "/organizations/1", nil)
+	req, _ := http.NewRequest("GET", "/organizations/"+org.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 
@@ -178,7 +178,7 @@ func TestGetOrganizationNotMember(t *testing.T) {
 	org := models.Organization{Name: "Test Org", Slug: "test-org"}
 	db.Create(&org)
 
-	req, _ := http.NewRequest("GET", "/organizations/1", nil)
+	req, _ := http.NewRequest("GET", "/organizations/"+org.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 
@@ -207,7 +207,7 @@ func TestUpdateOrganization(t *testing.T) {
 	body := UpdateOrgRequest{Name: "Updated Org"}
 	jsonBody, _ := json.Marshal(body)
 
-	req, _ := http.NewRequest("PUT", "/organizations/1", bytes.NewBuffer(jsonBody))
+	req, _ := http.NewRequest("PUT", "/organizations/"+org.ID, bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
@@ -241,7 +241,7 @@ func TestDeleteOrganization(t *testing.T) {
 	}
 	db.Create(&membership)
 
-	req, _ := http.NewRequest("DELETE", "/organizations/1", nil)
+	req, _ := http.NewRequest("DELETE", "/organizations/"+org.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 
@@ -266,7 +266,7 @@ func TestCannotDeleteGlobalOrganization(t *testing.T) {
 	}
 	db.Create(&membership)
 
-	req, _ := http.NewRequest("DELETE", "/organizations/1", nil)
+	req, _ := http.NewRequest("DELETE", "/organizations/"+globalOrg.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 
@@ -292,7 +292,7 @@ func TestListMembers(t *testing.T) {
 	}
 	db.Create(&membership)
 
-	req, _ := http.NewRequest("GET", "/organizations/1/members", nil)
+	req, _ := http.NewRequest("GET", "/organizations/"+org.ID+"/members", nil)
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 
@@ -332,7 +332,7 @@ func TestAddMember(t *testing.T) {
 	}
 	jsonBody, _ := json.Marshal(body)
 
-	req, _ := http.NewRequest("POST", "/organizations/1/members", bytes.NewBuffer(jsonBody))
+	req, _ := http.NewRequest("POST", "/organizations/"+org.ID+"/members", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", getAuthHeader(admin))
 	resp := httptest.NewRecorder()
@@ -364,7 +364,7 @@ func TestRemoveMember(t *testing.T) {
 		Role:           models.OrgRoleMember,
 	})
 
-	req, _ := http.NewRequest("DELETE", "/organizations/1/members/2", nil)
+	req, _ := http.NewRequest("DELETE", "/organizations/"+org.ID+"/members/"+member.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(admin))
 	resp := httptest.NewRecorder()
 
@@ -390,7 +390,7 @@ func TestCannotRemoveOnlyAdmin(t *testing.T) {
 	})
 
 	// Try to remove self as only admin
-	req, _ := http.NewRequest("DELETE", "/organizations/1/members/1", nil)
+	req, _ := http.NewRequest("DELETE", "/organizations/"+org.ID+"/members/"+admin.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(admin))
 	resp := httptest.NewRecorder()
 

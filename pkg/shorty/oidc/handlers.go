@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +22,7 @@ import (
 type Handler struct {
 	db        *gorm.DB
 	baseURL   string
-	providers map[uint]*providerConfig
+	providers map[string]*providerConfig
 	mu        sync.RWMutex
 }
 
@@ -35,7 +34,7 @@ type providerConfig struct {
 
 // StateData stores OIDC state for validation
 type StateData struct {
-	ProviderID uint   `json:"provider_id"`
+	ProviderID string `json:"provider_id"`
 	ReturnURL  string `json:"return_url"`
 	Nonce      string `json:"nonce"`
 }
@@ -45,7 +44,7 @@ func NewHandler(db *gorm.DB, baseURL string) *Handler {
 	h := &Handler{
 		db:        db,
 		baseURL:   baseURL,
-		providers: make(map[uint]*providerConfig),
+		providers: make(map[string]*providerConfig),
 	}
 	// Load existing providers
 	h.loadProviders()
@@ -104,7 +103,7 @@ func (h *Handler) initProvider(p models.OIDCProvider) error {
 
 // ProviderResponse represents an OIDC provider in API responses
 type ProviderResponse struct {
-	ID      uint   `json:"id"`
+	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Slug    string `json:"slug"`
 	Enabled bool   `json:"enabled"`
@@ -254,7 +253,7 @@ func (h *Handler) Callback(c *gin.Context) {
 
 	// Get provider details
 	var provider models.OIDCProvider
-	h.db.First(&provider, stateData.ProviderID)
+	h.db.First(&provider, "id = ?", stateData.ProviderID)
 
 	// Find or create user
 	user, err := h.findOrCreateUser(idToken.Subject, claims.Email, claims.Name, claims.GivenName, claims.FamilyName, &provider)
@@ -305,7 +304,7 @@ func (h *Handler) findOrCreateUser(subject, email, name, givenName, familyName s
 	if err == nil {
 		// Found existing identity, get the user
 		var user models.User
-		if err := h.db.First(&user, identity.UserID).Error; err != nil {
+		if err := h.db.First(&user, "id = ?", identity.UserID).Error; err != nil {
 			return nil, err
 		}
 		return &user, nil
@@ -395,7 +394,7 @@ func (h *Handler) findOrCreateUser(subject, email, name, givenName, familyName s
 
 // AdminProviderResponse includes all provider details for admins
 type AdminProviderResponse struct {
-	ID            uint   `json:"id"`
+	ID            string `json:"id"`
 	Name          string `json:"name"`
 	Slug          string `json:"slug"`
 	Issuer        string `json:"issuer"`
@@ -513,14 +512,10 @@ type UpdateProviderRequest struct {
 
 // UpdateProvider updates an OIDC provider
 func (h *Handler) UpdateProvider(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid provider ID"})
-		return
-	}
+	id := c.Param("id")
 
 	var provider models.OIDCProvider
-	if err := h.db.First(&provider, id).Error; err != nil {
+	if err := h.db.First(&provider, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Provider not found"})
 		return
 	}
@@ -559,7 +554,7 @@ func (h *Handler) UpdateProvider(c *gin.Context) {
 	}
 
 	// Reload provider
-	h.db.First(&provider, id)
+	h.db.First(&provider, "id = ?", id)
 
 	// Reinitialize provider
 	h.mu.Lock()
@@ -585,14 +580,10 @@ func (h *Handler) UpdateProvider(c *gin.Context) {
 
 // DeleteProvider deletes an OIDC provider
 func (h *Handler) DeleteProvider(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid provider ID"})
-		return
-	}
+	id := c.Param("id")
 
 	var provider models.OIDCProvider
-	if err := h.db.First(&provider, id).Error; err != nil {
+	if err := h.db.First(&provider, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Provider not found"})
 		return
 	}

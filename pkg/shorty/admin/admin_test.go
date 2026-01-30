@@ -47,7 +47,7 @@ func createTestUser(t *testing.T, db *gorm.DB, email, name string, role models.S
 	return user
 }
 
-func createTestLink(t *testing.T, db *gorm.DB, createdByID, groupID uint, slug string) *models.Link {
+func createTestLink(t *testing.T, db *gorm.DB, createdByID, groupID string, slug string) *models.Link {
 	link := &models.Link{
 		URL:         "https://example.com/" + slug,
 		Slug:        slug,
@@ -157,7 +157,7 @@ func TestGetUser(t *testing.T) {
 		h.GetUser(c)
 	})
 
-	req := httptest.NewRequest("GET", "/admin/users/"+string(rune('0'+user.ID)), nil)
+	req := httptest.NewRequest("GET", "/admin/users/"+user.ID, nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -200,7 +200,7 @@ func TestUpdateUser(t *testing.T) {
 		SystemRole: &newRole,
 	})
 
-	req := httptest.NewRequest("PUT", "/admin/users/"+string(rune('0'+user.ID)), bytes.NewReader(body))
+	req := httptest.NewRequest("PUT", "/admin/users/"+user.ID, bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
@@ -238,7 +238,7 @@ func TestUpdateUserCannotDemoteSelf(t *testing.T) {
 		SystemRole: &newRole,
 	})
 
-	req := httptest.NewRequest("PUT", "/admin/users/"+string(rune('0'+admin.ID)), bytes.NewReader(body))
+	req := httptest.NewRequest("PUT", "/admin/users/"+admin.ID, bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
@@ -267,7 +267,7 @@ func TestDeleteUser(t *testing.T) {
 		h.DeleteUser(c)
 	})
 
-	req := httptest.NewRequest("DELETE", "/admin/users/"+string(rune('0'+user.ID)), nil)
+	req := httptest.NewRequest("DELETE", "/admin/users/"+user.ID, nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -296,7 +296,7 @@ func TestDeleteUserCannotDeleteSelf(t *testing.T) {
 		h.DeleteUser(c)
 	})
 
-	req := httptest.NewRequest("DELETE", "/admin/users/"+string(rune('0'+admin.ID)), nil)
+	req := httptest.NewRequest("DELETE", "/admin/users/"+admin.ID, nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 

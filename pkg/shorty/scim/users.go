@@ -44,13 +44,13 @@ func (h *UserHandler) userToSCIM(user *models.User) User {
 
 	return User{
 		Schemas:    []string{SchemaUser},
-		ID:         strconv.FormatUint(uint64(user.ID), 10),
+		ID:         user.ID,
 		ExternalID: user.ExternalID,
 		Meta: Meta{
 			ResourceType: "User",
 			Created:      &created,
 			LastModified: &updated,
-			Location:     fmt.Sprintf("%s/scim/v2/Users/%d", h.baseURL, user.ID),
+			Location:     fmt.Sprintf("%s/scim/v2/Users/%s", h.baseURL, user.ID),
 		},
 		UserName:    user.Email,
 		DisplayName: displayName,
@@ -123,18 +123,10 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 
 // GetUser returns a single user (GET /scim/v2/Users/:id)
 func (h *UserHandler) GetUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Schemas: []string{SchemaError},
-			Detail:  "Invalid user ID",
-			Status:  "400",
-		})
-		return
-	}
+	id := c.Param("id")
 
 	var user models.User
-	if err := h.db.First(&user, id).Error; err != nil {
+	if err := h.db.First(&user, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{
 			Schemas: []string{SchemaError},
 			Detail:  "User not found",
@@ -265,18 +257,10 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 
 // UpdateUser replaces a user (PUT /scim/v2/Users/:id)
 func (h *UserHandler) UpdateUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Schemas: []string{SchemaError},
-			Detail:  "Invalid user ID",
-			Status:  "400",
-		})
-		return
-	}
+	id := c.Param("id")
 
 	var user models.User
-	if err := h.db.First(&user, id).Error; err != nil {
+	if err := h.db.First(&user, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{
 			Schemas: []string{SchemaError},
 			Detail:  "User not found",
@@ -343,18 +327,10 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 // PatchUser patches a user (PATCH /scim/v2/Users/:id)
 func (h *UserHandler) PatchUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Schemas: []string{SchemaError},
-			Detail:  "Invalid user ID",
-			Status:  "400",
-		})
-		return
-	}
+	id := c.Param("id")
 
 	var user models.User
-	if err := h.db.First(&user, id).Error; err != nil {
+	if err := h.db.First(&user, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{
 			Schemas: []string{SchemaError},
 			Detail:  "User not found",
@@ -469,18 +445,10 @@ func (h *UserHandler) applyRemoveOp(user *models.User, op PatchOperation) {
 
 // DeleteUser deletes a user (DELETE /scim/v2/Users/:id)
 func (h *UserHandler) DeleteUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Schemas: []string{SchemaError},
-			Detail:  "Invalid user ID",
-			Status:  "400",
-		})
-		return
-	}
+	id := c.Param("id")
 
 	var user models.User
-	if err := h.db.First(&user, id).Error; err != nil {
+	if err := h.db.First(&user, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{
 			Schemas: []string{SchemaError},
 			Detail:  "User not found",
@@ -490,7 +458,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	}
 
 	// Delete user and related data
-	err = h.db.Transaction(func(tx *gorm.DB) error {
+	err := h.db.Transaction(func(tx *gorm.DB) error {
 		tx.Where("user_id = ?", user.ID).Delete(&models.APIKey{})
 		tx.Where("user_id = ?", user.ID).Delete(&models.GroupMembership{})
 		tx.Where("user_id = ?", user.ID).Delete(&models.OIDCIdentity{})

@@ -182,7 +182,7 @@ func TestDeleteAPIKey(t *testing.T) {
 	apiKey := models.APIKey{UserID: user.ID, KeyHash: "hash1", KeyPrefix: "key1abcd", CreatedByID: user.ID}
 	db.Create(&apiKey)
 
-	req, _ := http.NewRequest("DELETE", "/api/api-keys/1", nil)
+	req, _ := http.NewRequest("DELETE", "/api/api-keys/"+apiKey.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 
@@ -211,7 +211,7 @@ func TestDeleteAPIKeyNotOwned(t *testing.T) {
 	db.Create(&apiKey)
 
 	// User1 tries to delete it
-	req, _ := http.NewRequest("DELETE", "/api/api-keys/1", nil)
+	req, _ := http.NewRequest("DELETE", "/api/api-keys/"+apiKey.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(user1))
 	resp := httptest.NewRecorder()
 
@@ -288,7 +288,7 @@ func TestCombinedAuthMiddleware(t *testing.T) {
 	// Verify user ID is set
 	var response map[string]interface{}
 	json.Unmarshal(resp.Body.Bytes(), &response)
-	if uint(response["user_id"].(float64)) != user.ID {
+	if response["user_id"].(string) != user.ID {
 		t.Error("User ID should be set in context")
 	}
 }
@@ -335,7 +335,7 @@ func TestUpdateLastUsed(t *testing.T) {
 
 	// Check it was updated
 	var updated models.APIKey
-	db.First(&updated, apiKey.ID)
+	db.First(&updated, "id = ?", apiKey.ID)
 
 	if updated.LastUsedAt == nil {
 		t.Error("LastUsedAt should be set")

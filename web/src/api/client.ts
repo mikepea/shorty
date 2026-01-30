@@ -15,6 +15,8 @@
  * 1. The `request` helper handles common logic (auth headers, JSON parsing, errors)
  * 2. Exported objects (auth, links, etc.) group related API calls
  * 3. Each method returns a Promise that resolves to the typed response
+ *
+ * NOTE: All IDs are strings (CUIDs) for security - prevents enumeration attacks.
  */
 
 import type {
@@ -46,25 +48,23 @@ const ORG_STORAGE_KEY = 'current_org_id';
 
 /**
  * Get the currently selected organization ID from localStorage.
- * Returns null if no organization is selected or if the stored value is invalid.
+ * Returns null if no organization is selected.
+ * IDs are now CUID strings, so we just return the stored string directly.
  */
-export function getCurrentOrgId(): number | null {
+export function getCurrentOrgId(): string | null {
   const stored = localStorage.getItem(ORG_STORAGE_KEY);
-  if (!stored) return null;
-  const parsed = parseInt(stored, 10);
-  // Handle NaN from corrupted/tampered localStorage
-  return Number.isNaN(parsed) ? null : parsed;
+  return stored || null;
 }
 
 /**
  * Set the current organization ID in localStorage.
  * This will be sent with all API requests via the X-Organization-ID header.
  */
-export function setCurrentOrgId(orgId: number | null): void {
+export function setCurrentOrgId(orgId: string | null): void {
   if (orgId === null) {
     localStorage.removeItem(ORG_STORAGE_KEY);
   } else {
-    localStorage.setItem(ORG_STORAGE_KEY, orgId.toString());
+    localStorage.setItem(ORG_STORAGE_KEY, orgId);
   }
 }
 
@@ -122,7 +122,7 @@ async function request<T>(
   // If we have an organization selected, include it in the request
   // This tells the backend which organization context to use
   if (orgId) {
-    (headers as Record<string, string>)['X-Organization-ID'] = orgId.toString();
+    (headers as Record<string, string>)['X-Organization-ID'] = orgId;
   }
 
   // Make the actual HTTP request
@@ -211,7 +211,7 @@ export const organizations = {
   list: () => request<Organization[]>('/organizations'),
 
   /** Get a specific organization by ID. */
-  get: (id: number) => request<Organization>(`/organizations/${id}`),
+  get: (id: string) => request<Organization>(`/organizations/${id}`),
 
   /** Create a new organization. The creator becomes an admin. */
   create: (name: string, slug: string) =>
@@ -221,36 +221,36 @@ export const organizations = {
     }),
 
   /** Update an organization's name (admin only). */
-  update: (id: number, name: string) =>
+  update: (id: string, name: string) =>
     request<Organization>(`/organizations/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ name }),
     }),
 
   /** Delete an organization (admin only). Cannot delete the global org. */
-  delete: (id: number) =>
+  delete: (id: string) =>
     request<{ message: string }>(`/organizations/${id}`, { method: 'DELETE' }),
 
   /** Get all members of an organization. */
-  listMembers: (id: number) =>
+  listMembers: (id: string) =>
     request<OrganizationMember[]>(`/organizations/${id}/members`),
 
   /** Add a user to an organization by their email (admin only). */
-  addMember: (orgId: number, email: string, role: 'admin' | 'member') =>
+  addMember: (orgId: string, email: string, role: 'admin' | 'member') =>
     request<OrganizationMember>(`/organizations/${orgId}/members`, {
       method: 'POST',
       body: JSON.stringify({ email, role }),
     }),
 
   /** Change a member's role in an organization (admin only). */
-  updateMember: (orgId: number, userId: number, role: 'admin' | 'member') =>
+  updateMember: (orgId: string, userId: string, role: 'admin' | 'member') =>
     request<OrganizationMember>(`/organizations/${orgId}/members/${userId}`, {
       method: 'PUT',
       body: JSON.stringify({ role }),
     }),
 
   /** Remove a member from an organization (admin only). */
-  removeMember: (orgId: number, userId: number) =>
+  removeMember: (orgId: string, userId: string) =>
     request<{ message: string }>(`/organizations/${orgId}/members/${userId}`, {
       method: 'DELETE',
     }),
@@ -270,7 +270,7 @@ export const groups = {
   list: () => request<Group[]>('/groups'),
 
   /** Get a specific group by ID. */
-  get: (id: number) => request<Group>(`/groups/${id}`),
+  get: (id: string) => request<Group>(`/groups/${id}`),
 
   /** Create a new group. */
   create: (name: string) =>
@@ -280,36 +280,36 @@ export const groups = {
     }),
 
   /** Update a group's name. */
-  update: (id: number, name: string) =>
+  update: (id: string, name: string) =>
     request<Group>(`/groups/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ name }),
     }),
 
   /** Delete a group. */
-  delete: (id: number) =>
+  delete: (id: string) =>
     request<{ message: string }>(`/groups/${id}`, { method: 'DELETE' }),
 
   /** Get all members of a group. */
-  listMembers: (id: number) =>
+  listMembers: (id: string) =>
     request<GroupMembership[]>(`/groups/${id}/members`),
 
   /** Add a user to a group by their email. */
-  addMember: (groupId: number, email: string, role: 'admin' | 'member') =>
+  addMember: (groupId: string, email: string, role: 'admin' | 'member') =>
     request<GroupMembership>(`/groups/${groupId}/members`, {
       method: 'POST',
       body: JSON.stringify({ email, role }),
     }),
 
   /** Change a member's role in a group. */
-  updateMember: (groupId: number, userId: number, role: 'admin' | 'member') =>
+  updateMember: (groupId: string, userId: string, role: 'admin' | 'member') =>
     request<GroupMembership>(`/groups/${groupId}/members/${userId}`, {
       method: 'PUT',
       body: JSON.stringify({ role }),
     }),
 
   /** Remove a member from a group. */
-  removeMember: (groupId: number, userId: number) =>
+  removeMember: (groupId: string, userId: string) =>
     request<{ message: string }>(`/groups/${groupId}/members/${userId}`, {
       method: 'DELETE',
     }),
@@ -341,7 +341,7 @@ export const links = {
   },
 
   /** Get all links in a specific group. */
-  listByGroup: (groupId: number) =>
+  listByGroup: (groupId: string) =>
     request<Link[]>(`/groups/${groupId}/links`),
 
   /** Get a single link by its slug. */
@@ -353,7 +353,7 @@ export const links = {
    * The data parameter uses TypeScript inline type definition.
    * Optional properties (title?, description?) may be omitted.
    */
-  create: (groupId: number, data: {
+  create: (groupId: string, data: {
     url: string;
     title?: string;
     description?: string;
@@ -398,7 +398,7 @@ export const tags = {
   list: () => request<Tag[]>('/tags'),
 
   /** Get tags used in a specific group. */
-  listByGroup: (groupId: number) =>
+  listByGroup: (groupId: string) =>
     request<Tag[]>(`/groups/${groupId}/tags`),
 
   /** Get tags on a specific link. */
@@ -447,7 +447,7 @@ export const apiKeys = {
     }),
 
   /** Delete (revoke) an API key. */
-  delete: (id: number) =>
+  delete: (id: string) =>
     request<{ message: string }>(`/api-keys/${id}`, { method: 'DELETE' }),
 };
 
@@ -462,14 +462,14 @@ export const apiKeys = {
  */
 export const importExport = {
   /** Import bookmarks into a group. */
-  import: (groupId: number, bookmarks: PinboardBookmark[]) =>
+  import: (groupId: string, bookmarks: PinboardBookmark[]) =>
     request<ImportResult>('/import', {
       method: 'POST',
       body: JSON.stringify({ group_id: groupId, bookmarks }),
     }),
 
   /** Export bookmarks (optionally from a specific group). */
-  export: (groupId?: number) => {
+  export: (groupId?: string) => {
     const query = groupId ? `?group_id=${groupId}` : '';
     return request<PinboardBookmark[]>(`/export${query}`);
   },
@@ -521,17 +521,17 @@ export const admin = {
   },
 
   /** Get a specific user by ID. */
-  getUser: (id: number) => request<AdminUser>(`/admin/users/${id}`),
+  getUser: (id: string) => request<AdminUser>(`/admin/users/${id}`),
 
   /** Update a user (name, role). */
-  updateUser: (id: number, data: { name?: string; system_role?: string }) =>
+  updateUser: (id: string, data: { name?: string; system_role?: string }) =>
     request<AdminUser>(`/admin/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
 
   /** Delete a user and all their data. */
-  deleteUser: (id: number) =>
+  deleteUser: (id: string) =>
     request<{ message: string }>(`/admin/users/${id}`, { method: 'DELETE' }),
 
   // --- OIDC Provider Management ---
@@ -556,7 +556,7 @@ export const admin = {
     }),
 
   /** Update an OIDC provider. */
-  updateOIDCProvider: (id: number, data: {
+  updateOIDCProvider: (id: string, data: {
     name?: string;
     issuer?: string;
     client_id?: string;
@@ -571,7 +571,7 @@ export const admin = {
     }),
 
   /** Delete an OIDC provider. */
-  deleteOIDCProvider: (id: number) =>
+  deleteOIDCProvider: (id: string) =>
     request<{ message: string }>(`/admin/oidc/providers/${id}`, { method: 'DELETE' }),
 
   // --- SCIM Token Management ---
@@ -580,14 +580,14 @@ export const admin = {
   listSCIMTokens: () => request<SCIMToken[]>('/admin/scim-tokens'),
 
   /** Create a new SCIM token. Returns the full token (only shown once!). */
-  createSCIMToken: (description?: string) =>
+  createSCIMToken: (organizationId: string, description?: string) =>
     request<CreateSCIMTokenResponse>('/admin/scim-tokens', {
       method: 'POST',
-      body: JSON.stringify({ description }),
+      body: JSON.stringify({ organization_id: organizationId, description }),
     }),
 
   /** Delete (revoke) a SCIM token. */
-  deleteSCIMToken: (id: number) =>
+  deleteSCIMToken: (id: string) =>
     request<{ message: string }>(`/admin/scim-tokens/${id}`, { method: 'DELETE' }),
 };
 

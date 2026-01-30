@@ -14,7 +14,7 @@ export default function AddLink() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [slug, setSlug] = useState('');
-  const [groupId, setGroupId] = useState<number>(0);
+  const [groupId, setGroupId] = useState<string>('');
   const [isPublic, setIsPublic] = useState(false);
   const [tagsInput, setTagsInput] = useState('');
 
@@ -125,7 +125,7 @@ export default function AddLink() {
           <select
             id="group"
             value={groupId}
-            onChange={(e) => setGroupId(Number(e.target.value))}
+            onChange={(e) => setGroupId(e.target.value)}
             required
           >
             {userGroups.map((group) => (

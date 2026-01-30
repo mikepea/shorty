@@ -69,7 +69,7 @@ describe('AuthContext', () => {
     it('loads user from token on mount', async () => {
       vi.mocked(localStorage.getItem).mockReturnValue('existing-token');
       vi.mocked(auth.me).mockResolvedValue({
-        id: 1,
+        id: 'usr_abc123',
         email: 'existing@example.com',
         name: 'Existing User',
         system_role: 'user',
@@ -128,7 +128,7 @@ describe('AuthContext', () => {
       vi.mocked(auth.login).mockResolvedValue({
         token: 'new-token',
         user: {
-          id: 1,
+          id: 'usr_abc123',
           email: 'test@example.com',
           name: 'Test User',
           system_role: 'user',
@@ -191,7 +191,7 @@ describe('AuthContext', () => {
       vi.mocked(auth.register).mockResolvedValue({
         token: 'new-token',
         user: {
-          id: 2,
+          id: 'usr_xyz789',
           email: 'new@example.com',
           name: 'New User',
           system_role: 'user',
@@ -225,7 +225,7 @@ describe('AuthContext', () => {
       const user = userEvent.setup();
       vi.mocked(localStorage.getItem).mockReturnValue('existing-token');
       vi.mocked(auth.me).mockResolvedValue({
-        id: 1,
+        id: 'usr_abc123',
         email: 'test@example.com',
         name: 'Test',
         system_role: 'user',
@@ -257,7 +257,7 @@ describe('AuthContext', () => {
       const user = userEvent.setup();
       vi.mocked(localStorage.getItem).mockReturnValue('existing-token');
       vi.mocked(auth.me).mockResolvedValue({
-        id: 1,
+        id: 'usr_abc123',
         email: 'test@example.com',
         name: 'Test',
         system_role: 'user',

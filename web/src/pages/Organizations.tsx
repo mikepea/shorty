@@ -32,7 +32,7 @@ export default function Organizations() {
   const [newOrgSlug, setNewOrgSlug] = useState('');
 
   // State for tracking which org's members are being viewed
-  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
 
@@ -43,8 +43,8 @@ export default function Organizations() {
   // Loading and error states
   const [isCreating, setIsCreating] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
-  const [isRemovingMember, setIsRemovingMember] = useState<number | null>(null); // Track which member is being removed
-  const [isUpdatingRole, setIsUpdatingRole] = useState<number | null>(null); // Track which member's role is being updated
+  const [isRemovingMember, setIsRemovingMember] = useState<string | null>(null); // Track which member is being removed
+  const [isUpdatingRole, setIsUpdatingRole] = useState<string | null>(null); // Track which member's role is being updated
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -57,7 +57,7 @@ export default function Organizations() {
    * useCallback memoizes the function so it doesn't change on every render,
    * which allows us to safely include it in useEffect dependency arrays.
    */
-  const loadMembers = useCallback(async (orgId: number) => {
+  const loadMembers = useCallback(async (orgId: string) => {
     setLoadingMembers(true);
     setError('');
     try {
@@ -154,7 +154,7 @@ export default function Organizations() {
   /**
    * Remove a member from an organization.
    */
-  const handleRemoveMember = async (userId: number) => {
+  const handleRemoveMember = async (userId: string) => {
     if (!selectedOrgId) return;
     if (isRemovingMember !== null) return; // Prevent double-clicks
     if (!confirm('Are you sure you want to remove this member?')) return;
@@ -177,7 +177,7 @@ export default function Organizations() {
   /**
    * Update a member's role.
    */
-  const handleUpdateRole = async (userId: number, role: 'admin' | 'member') => {
+  const handleUpdateRole = async (userId: string, role: 'admin' | 'member') => {
     if (!selectedOrgId) return;
     if (isUpdatingRole !== null) return; // Prevent double-clicks
 

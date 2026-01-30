@@ -246,7 +246,7 @@ func ensureGlobalOrgExists() (*models.Organization, error) {
 		return nil, err
 	}
 
-	log.Printf("Created global organization: %s (ID: %d)", globalOrg.Name, globalOrg.ID)
+	log.Printf("Created global organization: %s (ID: %s)", globalOrg.Name, globalOrg.ID)
 
 	// Migrate any existing data to the global organization
 	if err := migrateExistingDataToGlobalOrg(db, globalOrg.ID); err != nil {
@@ -259,27 +259,27 @@ func ensureGlobalOrgExists() (*models.Organization, error) {
 // migrateExistingDataToGlobalOrg assigns any existing groups, links, OIDC providers,
 // and SCIM tokens without an organization to the global organization.
 // This handles upgrades from pre-multi-tenancy versions.
-func migrateExistingDataToGlobalOrg(db *gorm.DB, globalOrgID uint) error {
+func migrateExistingDataToGlobalOrg(db *gorm.DB, globalOrgID string) error {
 	// Migrate groups without an organization
-	if err := db.Model(&models.Group{}).Where("organization_id = 0 OR organization_id IS NULL").
+	if err := db.Model(&models.Group{}).Where("organization_id = '' OR organization_id IS NULL").
 		Update("organization_id", globalOrgID).Error; err != nil {
 		return err
 	}
 
 	// Migrate links without an organization
-	if err := db.Model(&models.Link{}).Where("organization_id = 0 OR organization_id IS NULL").
+	if err := db.Model(&models.Link{}).Where("organization_id = '' OR organization_id IS NULL").
 		Update("organization_id", globalOrgID).Error; err != nil {
 		return err
 	}
 
 	// Migrate OIDC providers without an organization
-	if err := db.Model(&models.OIDCProvider{}).Where("organization_id = 0 OR organization_id IS NULL").
+	if err := db.Model(&models.OIDCProvider{}).Where("organization_id = '' OR organization_id IS NULL").
 		Update("organization_id", globalOrgID).Error; err != nil {
 		return err
 	}
 
 	// Migrate SCIM tokens without an organization
-	if err := db.Model(&models.SCIMToken{}).Where("organization_id = 0 OR organization_id IS NULL").
+	if err := db.Model(&models.SCIMToken{}).Where("organization_id = '' OR organization_id IS NULL").
 		Update("organization_id", globalOrgID).Error; err != nil {
 		return err
 	}

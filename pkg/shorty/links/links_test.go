@@ -37,8 +37,16 @@ func createTestUser(t *testing.T, db *gorm.DB, email string) models.User {
 	return user
 }
 
-func createTestGroup(t *testing.T, db *gorm.DB, name string, userID uint) models.Group {
-	group := models.Group{Name: name}
+func createTestOrg(t *testing.T, db *gorm.DB, name string) models.Organization {
+	org := models.Organization{Name: name, Slug: "test-org"}
+	if err := db.Create(&org).Error; err != nil {
+		t.Fatalf("Failed to create test organization: %v", err)
+	}
+	return org
+}
+
+func createTestGroup(t *testing.T, db *gorm.DB, name string, userID string, orgID string) models.Group {
+	group := models.Group{Name: name, OrganizationID: orgID}
 	if err := db.Create(&group).Error; err != nil {
 		t.Fatalf("Failed to create test group: %v", err)
 	}
@@ -74,7 +82,8 @@ func TestCreateLink(t *testing.T) {
 	db := setupTestDB(t)
 	router := setupTestRouter(db)
 	user := createTestUser(t, db, "test@example.com")
-	group := createTestGroup(t, db, "Test Group", user.ID)
+	org := createTestOrg(t, db, "Test Org")
+	group := createTestGroup(t, db, "Test Group", user.ID, org.ID)
 
 	body := CreateLinkRequest{
 		URL:         "https://example.com",
@@ -84,7 +93,7 @@ func TestCreateLink(t *testing.T) {
 	}
 	jsonBody, _ := json.Marshal(body)
 
-	req, _ := http.NewRequest("POST", "/api/groups/1/links", bytes.NewBuffer(jsonBody))
+	req, _ := http.NewRequest("POST", "/api/groups/"+group.ID+"/links", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
@@ -102,7 +111,7 @@ func TestCreateLink(t *testing.T) {
 		t.Errorf("Expected slug 'my-link', got %s", response.Slug)
 	}
 	if response.GroupID != group.ID {
-		t.Errorf("Expected group ID %d, got %d", group.ID, response.GroupID)
+		t.Errorf("Expected group ID %s, got %s", group.ID, response.GroupID)
 	}
 }
 
@@ -110,7 +119,8 @@ func TestCreateLinkAutoSlug(t *testing.T) {
 	db := setupTestDB(t)
 	router := setupTestRouter(db)
 	user := createTestUser(t, db, "test@example.com")
-	createTestGroup(t, db, "Test Group", user.ID)
+	org := createTestOrg(t, db, "Test Org")
+	group := createTestGroup(t, db, "Test Group", user.ID, org.ID)
 
 	body := CreateLinkRequest{
 		URL:   "https://example.com",
@@ -118,7 +128,7 @@ func TestCreateLinkAutoSlug(t *testing.T) {
 	}
 	jsonBody, _ := json.Marshal(body)
 
-	req, _ := http.NewRequest("POST", "/api/groups/1/links", bytes.NewBuffer(jsonBody))
+	req, _ := http.NewRequest("POST", "/api/groups/"+group.ID+"/links", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
@@ -144,14 +154,16 @@ func TestCreateLinkDuplicateSlug(t *testing.T) {
 	db := setupTestDB(t)
 	router := setupTestRouter(db)
 	user := createTestUser(t, db, "test@example.com")
-	createTestGroup(t, db, "Test Group", user.ID)
+	org := createTestOrg(t, db, "Test Org")
+	group := createTestGroup(t, db, "Test Group", user.ID, org.ID)
 
 	// Create first link
 	link := models.Link{
-		GroupID:     1,
-		CreatedByID: user.ID,
-		Slug:        "existing-slug",
-		URL:         "https://example.com",
+		GroupID:        group.ID,
+		OrganizationID: org.ID,
+		CreatedByID:    user.ID,
+		Slug:           "existing-slug",
+		URL:            "https://example.com",
 	}
 	db.Create(&link)
 
@@ -162,7 +174,7 @@ func TestCreateLinkDuplicateSlug(t *testing.T) {
 	}
 	jsonBody, _ := json.Marshal(body)
 
-	req, _ := http.NewRequest("POST", "/api/groups/1/links", bytes.NewBuffer(jsonBody))
+	req, _ := http.NewRequest("POST", "/api/groups/"+group.ID+"/links", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
@@ -178,7 +190,8 @@ func TestCreateLinkReservedSlug(t *testing.T) {
 	db := setupTestDB(t)
 	router := setupTestRouter(db)
 	user := createTestUser(t, db, "test@example.com")
-	createTestGroup(t, db, "Test Group", user.ID)
+	org := createTestOrg(t, db, "Test Org")
+	group := createTestGroup(t, db, "Test Group", user.ID, org.ID)
 
 	body := CreateLinkRequest{
 		URL:  "https://example.com",
@@ -186,7 +199,7 @@ func TestCreateLinkReservedSlug(t *testing.T) {
 	}
 	jsonBody, _ := json.Marshal(body)
 
-	req, _ := http.NewRequest("POST", "/api/groups/1/links", bytes.NewBuffer(jsonBody))
+	req, _ := http.NewRequest("POST", "/api/groups/"+group.ID+"/links", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
@@ -202,19 +215,21 @@ func TestListLinks(t *testing.T) {
 	db := setupTestDB(t)
 	router := setupTestRouter(db)
 	user := createTestUser(t, db, "test@example.com")
-	group := createTestGroup(t, db, "Test Group", user.ID)
+	org := createTestOrg(t, db, "Test Org")
+	group := createTestGroup(t, db, "Test Group", user.ID, org.ID)
 
 	// Create some links
 	for i := 0; i < 3; i++ {
 		db.Create(&models.Link{
-			GroupID:     group.ID,
-			CreatedByID: user.ID,
-			Slug:        generateRandomString(8, "abcdef"),
-			URL:         "https://example.com",
+			GroupID:        group.ID,
+			OrganizationID: org.ID,
+			CreatedByID:    user.ID,
+			Slug:           generateRandomString(8, "abcdef"),
+			URL:            "https://example.com",
 		})
 	}
 
-	req, _ := http.NewRequest("GET", "/api/groups/1/links", nil)
+	req, _ := http.NewRequest("GET", "/api/groups/"+group.ID+"/links", nil)
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 
@@ -236,14 +251,16 @@ func TestGetLinkBySlug(t *testing.T) {
 	db := setupTestDB(t)
 	router := setupTestRouter(db)
 	user := createTestUser(t, db, "test@example.com")
-	group := createTestGroup(t, db, "Test Group", user.ID)
+	org := createTestOrg(t, db, "Test Org")
+	group := createTestGroup(t, db, "Test Group", user.ID, org.ID)
 
 	link := models.Link{
-		GroupID:     group.ID,
-		CreatedByID: user.ID,
-		Slug:        "test-link",
-		URL:         "https://example.com",
-		Title:       "Test Link",
+		GroupID:        group.ID,
+		OrganizationID: org.ID,
+		CreatedByID:    user.ID,
+		Slug:           "test-link",
+		URL:            "https://example.com",
+		Title:          "Test Link",
 	}
 	db.Create(&link)
 
@@ -270,14 +287,16 @@ func TestGetPrivateLinkNotMember(t *testing.T) {
 	router := setupTestRouter(db)
 	owner := createTestUser(t, db, "owner@example.com")
 	other := createTestUser(t, db, "other@example.com")
-	group := createTestGroup(t, db, "Test Group", owner.ID)
+	org := createTestOrg(t, db, "Test Org")
+	group := createTestGroup(t, db, "Test Group", owner.ID, org.ID)
 
 	link := models.Link{
-		GroupID:     group.ID,
-		CreatedByID: owner.ID,
-		Slug:        "private-link",
-		URL:         "https://example.com",
-		IsPublic:    false,
+		GroupID:        group.ID,
+		OrganizationID: org.ID,
+		CreatedByID:    owner.ID,
+		Slug:           "private-link",
+		URL:            "https://example.com",
+		IsPublic:       false,
 	}
 	db.Create(&link)
 
@@ -297,14 +316,16 @@ func TestGetPublicLinkNotMember(t *testing.T) {
 	router := setupTestRouter(db)
 	owner := createTestUser(t, db, "owner@example.com")
 	other := createTestUser(t, db, "other@example.com")
-	group := createTestGroup(t, db, "Test Group", owner.ID)
+	org := createTestOrg(t, db, "Test Org")
+	group := createTestGroup(t, db, "Test Group", owner.ID, org.ID)
 
 	link := models.Link{
-		GroupID:     group.ID,
-		CreatedByID: owner.ID,
-		Slug:        "public-link",
-		URL:         "https://example.com",
-		IsPublic:    true,
+		GroupID:        group.ID,
+		OrganizationID: org.ID,
+		CreatedByID:    owner.ID,
+		Slug:           "public-link",
+		URL:            "https://example.com",
+		IsPublic:       true,
 	}
 	db.Create(&link)
 
@@ -323,14 +344,16 @@ func TestUpdateLink(t *testing.T) {
 	db := setupTestDB(t)
 	router := setupTestRouter(db)
 	user := createTestUser(t, db, "test@example.com")
-	group := createTestGroup(t, db, "Test Group", user.ID)
+	org := createTestOrg(t, db, "Test Org")
+	group := createTestGroup(t, db, "Test Group", user.ID, org.ID)
 
 	link := models.Link{
-		GroupID:     group.ID,
-		CreatedByID: user.ID,
-		Slug:        "test-link",
-		URL:         "https://example.com",
-		Title:       "Old Title",
+		GroupID:        group.ID,
+		OrganizationID: org.ID,
+		CreatedByID:    user.ID,
+		Slug:           "test-link",
+		URL:            "https://example.com",
+		Title:          "Old Title",
 	}
 	db.Create(&link)
 
@@ -362,13 +385,15 @@ func TestDeleteLink(t *testing.T) {
 	db := setupTestDB(t)
 	router := setupTestRouter(db)
 	user := createTestUser(t, db, "test@example.com")
-	group := createTestGroup(t, db, "Test Group", user.ID)
+	org := createTestOrg(t, db, "Test Org")
+	group := createTestGroup(t, db, "Test Group", user.ID, org.ID)
 
 	link := models.Link{
-		GroupID:     group.ID,
-		CreatedByID: user.ID,
-		Slug:        "test-link",
-		URL:         "https://example.com",
+		GroupID:        group.ID,
+		OrganizationID: org.ID,
+		CreatedByID:    user.ID,
+		Slug:           "test-link",
+		URL:            "https://example.com",
 	}
 	db.Create(&link)
 
@@ -387,22 +412,25 @@ func TestSearchLinks(t *testing.T) {
 	db := setupTestDB(t)
 	router := setupTestRouter(db)
 	user := createTestUser(t, db, "test@example.com")
-	group := createTestGroup(t, db, "Test Group", user.ID)
+	org := createTestOrg(t, db, "Test Org")
+	group := createTestGroup(t, db, "Test Group", user.ID, org.ID)
 
 	// Create links with different titles
 	db.Create(&models.Link{
-		GroupID:     group.ID,
-		CreatedByID: user.ID,
-		Slug:        "link1",
-		URL:         "https://example.com",
-		Title:       "Golang Tutorial",
+		GroupID:        group.ID,
+		OrganizationID: org.ID,
+		CreatedByID:    user.ID,
+		Slug:           "link1",
+		URL:            "https://example.com",
+		Title:          "Golang Tutorial",
 	})
 	db.Create(&models.Link{
-		GroupID:     group.ID,
-		CreatedByID: user.ID,
-		Slug:        "link2",
-		URL:         "https://example.com",
-		Title:       "Python Guide",
+		GroupID:        group.ID,
+		OrganizationID: org.ID,
+		CreatedByID:    user.ID,
+		Slug:           "link2",
+		URL:            "https://example.com",
+		Title:          "Python Guide",
 	})
 
 	req, _ := http.NewRequest("GET", "/api/links?q=Golang", nil)

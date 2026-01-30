@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	"github.com/mikepea/shorty/pkg/shorty/cuid"
 	"gorm.io/gorm"
 )
 
@@ -16,7 +17,7 @@ const (
 
 // User represents a user in the system
 type User struct {
-	ID           uint           `gorm:"primarykey" json:"id"`
+	ID           string         `gorm:"primarykey;type:varchar(24)" json:"id"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
@@ -34,4 +35,12 @@ type User struct {
 	GroupMemberships        []GroupMembership        `gorm:"foreignKey:UserID" json:"group_memberships,omitempty"`
 	APIKeys                 []APIKey                 `gorm:"foreignKey:UserID" json:"api_keys,omitempty"`
 	OIDCIdentities          []OIDCIdentity           `gorm:"foreignKey:UserID" json:"oidc_identities,omitempty"`
+}
+
+// BeforeCreate generates a CUID for the user if not already set
+func (u *User) BeforeCreate(tx *gorm.DB) error {
+	if u.ID == "" {
+		u.ID = cuid.New()
+	}
+	return nil
 }

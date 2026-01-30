@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -34,7 +33,7 @@ func NewHandler(db *gorm.DB) *Handler {
 
 // APIKeyResponse represents an API key in responses
 type APIKeyResponse struct {
-	ID          uint       `json:"id"`
+	ID          string     `json:"id"`
 	KeyPrefix   string     `json:"key_prefix"`
 	Description string     `json:"description"`
 	LastUsedAt  *time.Time `json:"last_used_at"`
@@ -48,7 +47,7 @@ type CreateAPIKeyRequest struct {
 
 // CreateAPIKeyResponse includes the full key (only shown once)
 type CreateAPIKeyResponse struct {
-	ID          uint      `json:"id"`
+	ID          string    `json:"id"`
 	Key         string    `json:"key"`
 	KeyPrefix   string    `json:"key_prefix"`
 	Description string    `json:"description"`
@@ -138,11 +137,7 @@ func (h *Handler) List(c *gin.Context) {
 // Delete deletes an API key
 func (h *Handler) Delete(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	keyID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid API key ID"})
-		return
-	}
+	keyID := c.Param("id")
 
 	// Find the API key
 	var apiKey models.APIKey
@@ -173,7 +168,7 @@ func ValidateAPIKey(db *gorm.DB, key string) (*models.APIKey, error) {
 }
 
 // UpdateLastUsed updates the last_used_at timestamp for an API key
-func UpdateLastUsed(db *gorm.DB, apiKeyID uint) {
+func UpdateLastUsed(db *gorm.DB, apiKeyID string) {
 	now := time.Now()
 	db.Model(&models.APIKey{}).Where("id = ?", apiKeyID).Update("last_used_at", now)
 }
@@ -233,7 +228,7 @@ func CombinedAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 
 		// Get user to set other context values
 		var user models.User
-		if err := db.First(&user, apiKey.UserID).Error; err != nil {
+		if err := db.First(&user, "id = ?", apiKey.UserID).Error; err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 			c.Abort()
 			return

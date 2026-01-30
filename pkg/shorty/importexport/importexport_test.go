@@ -37,7 +37,7 @@ func createTestUser(t *testing.T, db *gorm.DB, email string) models.User {
 	return user
 }
 
-func createTestGroup(t *testing.T, db *gorm.DB, name string, userID uint) models.Group {
+func createTestGroup(t *testing.T, db *gorm.DB, name string, userID string) models.Group {
 	group := models.Group{Name: name}
 	if err := db.Create(&group).Error; err != nil {
 		t.Fatalf("Failed to create test group: %v", err)
@@ -53,7 +53,7 @@ func createTestGroup(t *testing.T, db *gorm.DB, name string, userID uint) models
 	return group
 }
 
-func createTestLink(t *testing.T, db *gorm.DB, groupID, userID uint, slug, url string) models.Link {
+func createTestLink(t *testing.T, db *gorm.DB, groupID, userID string, slug, url string) models.Link {
 	link := models.Link{
 		GroupID:     groupID,
 		CreatedByID: userID,
@@ -231,7 +231,7 @@ func TestExportBookmarksByGroup(t *testing.T) {
 	createTestLink(t, db, group2.ID, user.ID, "link2", "https://golang.org")
 
 	// Export only from group1
-	httpReq, _ := http.NewRequest("GET", "/api/export?group_id=1", nil)
+	httpReq, _ := http.NewRequest("GET", "/api/export?group_id="+group1.ID, nil)
 	httpReq.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 

@@ -48,7 +48,7 @@ func TestUserModel(t *testing.T) {
 		t.Fatalf("Failed to create user: %v", result.Error)
 	}
 
-	if user.ID == 0 {
+	if user.ID == "" {
 		t.Error("Expected user ID to be set after create")
 	}
 
@@ -96,7 +96,7 @@ func TestGroupAndMembership(t *testing.T) {
 
 	// Verify relationship
 	var loadedUser User
-	db.Preload("GroupMemberships").First(&loadedUser, user.ID)
+	db.Preload("GroupMemberships").First(&loadedUser, "id = ?", user.ID)
 	if len(loadedUser.GroupMemberships) != 1 {
 		t.Errorf("Expected 1 membership, got %d", len(loadedUser.GroupMemberships))
 	}
@@ -134,7 +134,7 @@ func TestLinkWithTags(t *testing.T) {
 
 	// Verify tags relationship
 	var loadedLink Link
-	db.Preload("Tags").First(&loadedLink, link.ID)
+	db.Preload("Tags").First(&loadedLink, "id = ?", link.ID)
 	if len(loadedLink.Tags) != 2 {
 		t.Errorf("Expected 2 tags, got %d", len(loadedLink.Tags))
 	}

@@ -2,7 +2,6 @@ package admin
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mikepea/shorty/pkg/shorty/auth"
@@ -22,7 +21,7 @@ func NewHandler(db *gorm.DB) *Handler {
 
 // UserResponse represents user data in admin responses
 type UserResponse struct {
-	ID         uint   `json:"id"`
+	ID         string `json:"id"`
 	Email      string `json:"email"`
 	Name       string `json:"name"`
 	SystemRole string `json:"system_role"`
@@ -39,16 +38,16 @@ type UpdateUserRequest struct {
 
 // StatsResponse represents system statistics
 type StatsResponse struct {
-	TotalUsers      int64 `json:"total_users"`
-	TotalLinks      int64 `json:"total_links"`
-	TotalGroups     int64 `json:"total_groups"`
-	TotalTags       int64 `json:"total_tags"`
-	TotalClicks     int64 `json:"total_clicks"`
-	PublicLinks     int64 `json:"public_links"`
-	PrivateLinks    int64 `json:"private_links"`
-	UnreadLinks     int64 `json:"unread_links"`
-	AdminUsers      int64 `json:"admin_users"`
-	ActiveAPIKeys   int64 `json:"active_api_keys"`
+	TotalUsers    int64 `json:"total_users"`
+	TotalLinks    int64 `json:"total_links"`
+	TotalGroups   int64 `json:"total_groups"`
+	TotalTags     int64 `json:"total_tags"`
+	TotalClicks   int64 `json:"total_clicks"`
+	PublicLinks   int64 `json:"public_links"`
+	PrivateLinks  int64 `json:"private_links"`
+	UnreadLinks   int64 `json:"unread_links"`
+	AdminUsers    int64 `json:"admin_users"`
+	ActiveAPIKeys int64 `json:"active_api_keys"`
 }
 
 // ListUsers returns all users (admin only)
@@ -94,14 +93,10 @@ func (h *Handler) ListUsers(c *gin.Context) {
 
 // GetUser returns a single user by ID (admin only)
 func (h *Handler) GetUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
+	id := c.Param("id")
 
 	var user models.User
-	if err := h.db.First(&user, id).Error; err != nil {
+	if err := h.db.First(&user, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
@@ -123,14 +118,10 @@ func (h *Handler) GetUser(c *gin.Context) {
 
 // UpdateUser updates a user's profile (admin only)
 func (h *Handler) UpdateUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
+	id := c.Param("id")
 
 	var user models.User
-	if err := h.db.First(&user, id).Error; err != nil {
+	if err := h.db.First(&user, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
@@ -143,7 +134,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 
 	// Prevent admin from demoting themselves
 	currentUserID, _ := auth.GetUserID(c)
-	if uint(id) == currentUserID && req.SystemRole != nil && *req.SystemRole != "admin" {
+	if id == currentUserID && req.SystemRole != nil && *req.SystemRole != "admin" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot demote yourself"})
 		return
 	}
@@ -168,7 +159,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 	}
 
 	// Reload user
-	h.db.First(&user, id)
+	h.db.First(&user, "id = ?", id)
 
 	var linkCount, groupCount int64
 	h.db.Model(&models.Link{}).Where("created_by_id = ?", user.ID).Count(&linkCount)
@@ -187,27 +178,23 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 
 // DeleteUser soft-deletes a user (admin only)
 func (h *Handler) DeleteUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
+	id := c.Param("id")
 
 	// Prevent admin from deleting themselves
 	currentUserID, _ := auth.GetUserID(c)
-	if uint(id) == currentUserID {
+	if id == currentUserID {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot delete yourself"})
 		return
 	}
 
 	var user models.User
-	if err := h.db.First(&user, id).Error; err != nil {
+	if err := h.db.First(&user, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
 	// Delete user and related data in a transaction
-	err = h.db.Transaction(func(tx *gorm.DB) error {
+	err := h.db.Transaction(func(tx *gorm.DB) error {
 		// Delete API keys
 		if err := tx.Where("user_id = ?", user.ID).Delete(&models.APIKey{}).Error; err != nil {
 			return err

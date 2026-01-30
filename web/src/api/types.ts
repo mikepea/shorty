@@ -15,6 +15,8 @@
  *
  * These types MUST match what the Go backend sends/expects.
  * If the backend changes, these need to be updated too.
+ *
+ * NOTE: All IDs are strings (CUIDs) for security - prevents enumeration attacks.
  */
 
 // ============================================================================
@@ -26,7 +28,7 @@
  * This is returned by /api/auth/me and included in login/register responses.
  */
 export interface User {
-  id: number;
+  id: string;  // CUID string identifier
   email: string;
   name: string;
   system_role: 'admin' | 'user';  // Admins have extra permissions
@@ -53,7 +55,7 @@ export interface AuthResponse {
  * Users can belong to multiple organizations.
  */
 export interface Organization {
-  id: number;
+  id: string;  // CUID string identifier
   name: string;
   slug: string;              // URL-safe identifier (unique across all orgs)
   is_global: boolean;        // True only for "Shorty Global" (the default org)
@@ -67,8 +69,8 @@ export interface Organization {
  * Used in the organization members list.
  */
 export interface OrganizationMember {
-  id: number;
-  user_id: number;
+  id: string;  // CUID string identifier
+  user_id: string;
   email: string;
   name: string;
   role: 'admin' | 'member';  // Admins can manage org settings and members
@@ -84,7 +86,7 @@ export interface OrganizationMember {
  * Users can be members of multiple groups.
  */
 export interface Group {
-  id: number;
+  id: string;  // CUID string identifier
   name: string;
   created_at: string;
 }
@@ -94,9 +96,9 @@ export interface Group {
  * The role determines what the user can do in that group.
  */
 export interface GroupMembership {
-  id: number;
-  user_id: number;
-  group_id: number;
+  id: string;  // CUID string identifier
+  user_id: string;
+  group_id: string;
   role: 'admin' | 'member';  // Admins can manage members, members can only view/add links
   user?: User;    // Sometimes included for display purposes
   group?: Group;  // Sometimes included for display purposes
@@ -110,7 +112,7 @@ export interface GroupMembership {
  * A tag is a label that can be applied to links for organization.
  */
 export interface Tag {
-  id: number;
+  id: string;  // CUID string identifier
   name: string;
   link_count?: number;  // How many links have this tag (only in some responses)
 }
@@ -119,9 +121,9 @@ export interface Tag {
  * A shortened link - the core entity of the app.
  */
 export interface Link {
-  id: number;
-  group_id: number;       // Which group this link belongs to
-  created_by_id: number;  // User who created it
+  id: string;  // CUID string identifier
+  group_id: string;       // Which group this link belongs to
+  created_by_id: string;  // User who created it
   slug: string;           // The short code (e.g., "abc123" in shorty.io/abc123)
   url: string;            // The full URL this redirects to
   title: string;          // Display title
@@ -144,7 +146,7 @@ export interface Link {
  * The full key is only shown once when created - we only store a prefix.
  */
 export interface APIKey {
-  id: number;
+  id: string;  // CUID string identifier
   key_prefix: string;      // First few characters for identification
   description: string;     // User-provided description
   last_used_at: string | null;  // When the key was last used (null if never)
@@ -156,7 +158,7 @@ export interface APIKey {
  * The `key` field contains the full key - SAVE IT, it won't be shown again!
  */
 export interface CreateAPIKeyResponse {
-  id: number;
+  id: string;  // CUID string identifier
   key: string;           // Full API key - only shown once!
   key_prefix: string;
   description: string;
@@ -198,7 +200,7 @@ export interface PinboardBookmark {
  * Extended user info shown in admin user list.
  */
 export interface AdminUser {
-  id: number;
+  id: string;  // CUID string identifier
   email: string;
   name: string;
   system_role: 'admin' | 'user';
@@ -231,7 +233,7 @@ export interface AdminStats {
  * Public info about an OIDC provider (shown on login page).
  */
 export interface OIDCProvider {
-  id: number;
+  id: string;  // CUID string identifier
   name: string;     // Display name (e.g., "Google", "Okta")
   slug: string;     // URL-safe identifier
   enabled: boolean;
@@ -241,7 +243,7 @@ export interface OIDCProvider {
  * Full OIDC provider config (admin only).
  */
 export interface OIDCProviderAdmin {
-  id: number;
+  id: string;  // CUID string identifier
   name: string;
   slug: string;
   issuer: string;         // OIDC issuer URL
@@ -260,7 +262,7 @@ export interface OIDCProviderAdmin {
  * SCIM tokens allow identity providers to sync users/groups.
  */
 export interface SCIMToken {
-  id: number;
+  id: string;  // CUID string identifier
   token_prefix: string;
   description: string;
   last_used_at: string | null;
@@ -271,7 +273,7 @@ export interface SCIMToken {
  * Response when creating a SCIM token.
  */
 export interface CreateSCIMTokenResponse {
-  id: number;
+  id: string;  // CUID string identifier
   token: string;  // Full token - only shown once!
   token_prefix: string;
   description: string;

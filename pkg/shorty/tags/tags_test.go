@@ -37,7 +37,7 @@ func createTestUser(t *testing.T, db *gorm.DB, email string) models.User {
 	return user
 }
 
-func createTestGroup(t *testing.T, db *gorm.DB, name string, userID uint) models.Group {
+func createTestGroup(t *testing.T, db *gorm.DB, name string, userID string) models.Group {
 	group := models.Group{Name: name}
 	if err := db.Create(&group).Error; err != nil {
 		t.Fatalf("Failed to create test group: %v", err)
@@ -53,7 +53,7 @@ func createTestGroup(t *testing.T, db *gorm.DB, name string, userID uint) models
 	return group
 }
 
-func createTestLink(t *testing.T, db *gorm.DB, groupID, userID uint, slug string) models.Link {
+func createTestLink(t *testing.T, db *gorm.DB, groupID, userID string, slug string) models.Link {
 	link := models.Link{
 		GroupID:     groupID,
 		CreatedByID: userID,
@@ -133,7 +133,7 @@ func TestListTagsByGroup(t *testing.T) {
 	db.Model(&link1).Association("Tags").Append(&tag1)
 	db.Model(&link2).Association("Tags").Append(&tag2)
 
-	req, _ := http.NewRequest("GET", "/api/groups/1/tags", nil)
+	req, _ := http.NewRequest("GET", "/api/groups/"+group1.ID+"/tags", nil)
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 
@@ -302,7 +302,7 @@ func TestRemoveLinkTag(t *testing.T) {
 
 	// Verify tag was removed
 	var updatedLink models.Link
-	db.Preload("Tags").First(&updatedLink, link.ID)
+	db.Preload("Tags").First(&updatedLink, "id = ?", link.ID)
 	if len(updatedLink.Tags) != 0 {
 		t.Errorf("Expected 0 tags, got %d", len(updatedLink.Tags))
 	}

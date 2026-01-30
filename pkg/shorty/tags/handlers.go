@@ -2,7 +2,6 @@ package tags
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mikepea/shorty/pkg/shorty/auth"
@@ -22,7 +21,7 @@ func NewHandler(db *gorm.DB) *Handler {
 
 // TagResponse represents a tag in API responses
 type TagResponse struct {
-	ID        uint   `json:"id"`
+	ID        string `json:"id"`
 	Name      string `json:"name"`
 	LinkCount int    `json:"link_count,omitempty"`
 }
@@ -33,13 +32,13 @@ type SetTagsRequest struct {
 }
 
 // getUserGroupIDs returns all group IDs the user is a member of
-func (h *Handler) getUserGroupIDs(userID uint) ([]uint, error) {
+func (h *Handler) getUserGroupIDs(userID string) ([]string, error) {
 	var memberships []models.GroupMembership
 	if err := h.db.Where("user_id = ?", userID).Find(&memberships).Error; err != nil {
 		return nil, err
 	}
 
-	groupIDs := make([]uint, len(memberships))
+	groupIDs := make([]string, len(memberships))
 	for i, m := range memberships {
 		groupIDs[i] = m.GroupID
 	}
@@ -47,7 +46,7 @@ func (h *Handler) getUserGroupIDs(userID uint) ([]uint, error) {
 }
 
 // checkGroupMembership verifies the user is a member of the group
-func (h *Handler) checkGroupMembership(userID, groupID uint) error {
+func (h *Handler) checkGroupMembership(userID string, groupID string) error {
 	var membership models.GroupMembership
 	if err := h.db.Where("user_id = ? AND group_id = ?", userID, groupID).First(&membership).Error; err != nil {
 		return err
@@ -72,7 +71,7 @@ func (h *Handler) List(c *gin.Context) {
 
 	// Get tags with link counts for user's groups
 	type tagWithCount struct {
-		ID        uint
+		ID        string
 		Name      string
 		LinkCount int
 	}
@@ -107,26 +106,22 @@ func (h *Handler) List(c *gin.Context) {
 // ListByGroup returns all tags used in a specific group
 func (h *Handler) ListByGroup(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-		return
-	}
+	groupID := c.Param("id")
 
 	// Check membership
-	if err := h.checkGroupMembership(userID, uint(groupID)); err != nil {
+	if err := h.checkGroupMembership(userID, groupID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})
 		return
 	}
 
 	type tagWithCount struct {
-		ID        uint
+		ID        string
 		Name      string
 		LinkCount int
 	}
 
 	var results []tagWithCount
-	err = h.db.Table("tags").
+	err := h.db.Table("tags").
 		Select("tags.id, tags.name, COUNT(DISTINCT links.id) as link_count").
 		Joins("INNER JOIN link_tags ON tags.id = link_tags.tag_id").
 		Joins("INNER JOIN links ON link_tags.link_id = links.id AND links.group_id = ? AND links.deleted_at IS NULL", groupID).
