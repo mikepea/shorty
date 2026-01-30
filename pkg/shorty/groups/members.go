@@ -2,7 +2,6 @@ package groups
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mikepea/shorty/pkg/shorty/auth"
@@ -11,7 +10,7 @@ import (
 
 // MemberResponse represents a group member in API responses
 type MemberResponse struct {
-	ID    uint   `json:"id"`
+	ID    string `json:"id"`
 	Email string `json:"email"`
 	Name  string `json:"name"`
 	Role  string `json:"role"`
@@ -31,11 +30,7 @@ type UpdateMemberRequest struct {
 // ListMembers returns all members of a group
 func (h *Handler) ListMembers(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-		return
-	}
+	groupID := c.Param("id")
 
 	// Check membership
 	if err := h.db.Where("user_id = ? AND group_id = ?", userID, groupID).First(&models.GroupMembership{}).Error; err != nil {
@@ -65,11 +60,7 @@ func (h *Handler) ListMembers(c *gin.Context) {
 // AddMember adds a user to a group (admin only)
 func (h *Handler) AddMember(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-		return
-	}
+	groupID := c.Param("id")
 
 	// Check admin membership
 	if err := h.db.Where("user_id = ? AND group_id = ? AND role = ?", userID, groupID, models.GroupRoleAdmin).First(&models.GroupMembership{}).Error; err != nil {
@@ -100,7 +91,7 @@ func (h *Handler) AddMember(c *gin.Context) {
 	// Create membership
 	membership := models.GroupMembership{
 		UserID:  targetUser.ID,
-		GroupID: uint(groupID),
+		GroupID: groupID,
 		Role:    models.GroupRole(req.Role),
 	}
 
@@ -120,16 +111,8 @@ func (h *Handler) AddMember(c *gin.Context) {
 // UpdateMember updates a member's role (admin only)
 func (h *Handler) UpdateMember(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-		return
-	}
-	memberID, err := strconv.ParseUint(c.Param("userId"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
+	groupID := c.Param("id")
+	memberID := c.Param("userId")
 
 	// Check admin membership
 	if err := h.db.Where("user_id = ? AND group_id = ? AND role = ?", userID, groupID, models.GroupRoleAdmin).First(&models.GroupMembership{}).Error; err != nil {
@@ -168,16 +151,8 @@ func (h *Handler) UpdateMember(c *gin.Context) {
 // RemoveMember removes a user from a group (admin only)
 func (h *Handler) RemoveMember(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-		return
-	}
-	memberID, err := strconv.ParseUint(c.Param("userId"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
+	groupID := c.Param("id")
+	memberID := c.Param("userId")
 
 	// Check admin membership
 	if err := h.db.Where("user_id = ? AND group_id = ? AND role = ?", userID, groupID, models.GroupRoleAdmin).First(&models.GroupMembership{}).Error; err != nil {
@@ -186,7 +161,7 @@ func (h *Handler) RemoveMember(c *gin.Context) {
 	}
 
 	// Prevent removing self if only admin
-	if userID == uint(memberID) {
+	if userID == memberID {
 		var adminCount int64
 		h.db.Model(&models.GroupMembership{}).Where("group_id = ? AND role = ?", groupID, models.GroupRoleAdmin).Count(&adminCount)
 		if adminCount <= 1 {

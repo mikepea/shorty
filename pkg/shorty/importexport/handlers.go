@@ -38,7 +38,7 @@ type PinboardBookmark struct {
 
 // ImportRequest represents an import request
 type ImportRequest struct {
-	GroupID   uint               `json:"group_id" binding:"required"`
+	GroupID   string             `json:"group_id" binding:"required"`
 	Bookmarks []PinboardBookmark `json:"bookmarks" binding:"required"`
 }
 
@@ -61,7 +61,7 @@ type ExportBookmark struct {
 }
 
 // checkGroupMembership verifies the user is a member of the group
-func (h *Handler) checkGroupMembership(userID, groupID uint) error {
+func (h *Handler) checkGroupMembership(userID, groupID string) error {
 	var membership models.GroupMembership
 	if err := h.db.Where("user_id = ? AND group_id = ?", userID, groupID).First(&membership).Error; err != nil {
 		return err
@@ -70,13 +70,13 @@ func (h *Handler) checkGroupMembership(userID, groupID uint) error {
 }
 
 // getUserGroupIDs returns all group IDs the user is a member of
-func (h *Handler) getUserGroupIDs(userID uint) ([]uint, error) {
+func (h *Handler) getUserGroupIDs(userID string) ([]string, error) {
 	var memberships []models.GroupMembership
 	if err := h.db.Where("user_id = ?", userID).Find(&memberships).Error; err != nil {
 		return nil, err
 	}
 
-	groupIDs := make([]uint, len(memberships))
+	groupIDs := make([]string, len(memberships))
 	for i, m := range memberships {
 		groupIDs[i] = m.GroupID
 	}
@@ -223,23 +223,17 @@ func (h *Handler) Export(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 
 	// Get optional group_id parameter
-	groupIDStr := c.Query("group_id")
-	var groupIDs []uint
+	groupID := c.Query("group_id")
+	var groupIDs []string
 
-	if groupIDStr != "" {
-		groupID, err := strconv.ParseUint(groupIDStr, 10, 32)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-			return
-		}
-
+	if groupID != "" {
 		// Check membership
-		if err := h.checkGroupMembership(userID, uint(groupID)); err != nil {
+		if err := h.checkGroupMembership(userID, groupID); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})
 			return
 		}
 
-		groupIDs = []uint{uint(groupID)}
+		groupIDs = []string{groupID}
 	} else {
 		// Export from all user's groups
 		var err error

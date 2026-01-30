@@ -39,11 +39,45 @@ func createGlobalOrg(t *testing.T, db *gorm.DB) models.Organization {
 	return globalOrg
 }
 
-func createTestLink(t *testing.T, db *gorm.DB, orgID uint, slug, url string, isPublic bool) models.Link {
+func createTestUser(t *testing.T, db *gorm.DB) models.User {
+	user := models.User{
+		Email:        "test@example.com",
+		PasswordHash: "hash",
+		Name:         "Test User",
+		SystemRole:   models.SystemRoleUser,
+	}
+	if err := db.Create(&user).Error; err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+	return user
+}
+
+func createTestGroup(t *testing.T, db *gorm.DB, orgID string) models.Group {
+	group := models.Group{
+		Name:           "Test Group",
+		OrganizationID: orgID,
+	}
+	if err := db.Create(&group).Error; err != nil {
+		t.Fatalf("Failed to create test group: %v", err)
+	}
+	return group
+}
+
+func createTestLink(t *testing.T, db *gorm.DB, orgID string, slug, url string, isPublic bool) models.Link {
+	// Get or create a user and group for the link
+	var user models.User
+	if err := db.First(&user).Error; err != nil {
+		user = createTestUser(t, db)
+	}
+	var group models.Group
+	if err := db.Where("organization_id = ?", orgID).First(&group).Error; err != nil {
+		group = createTestGroup(t, db, orgID)
+	}
+
 	link := models.Link{
 		OrganizationID: orgID,
-		GroupID:        1,
-		CreatedByID:    1,
+		GroupID:        group.ID,
+		CreatedByID:    user.ID,
 		Slug:           slug,
 		URL:            url,
 		Title:          "Test Link",
@@ -147,7 +181,7 @@ func TestRedirectIncrementsClickCount(t *testing.T) {
 
 	// Check click count was incremented
 	var updatedLink models.Link
-	db.First(&updatedLink, link.ID)
+	db.First(&updatedLink, "id = ?", link.ID)
 	if updatedLink.ClickCount != 1 {
 		t.Errorf("Expected click count 1, got %d", updatedLink.ClickCount)
 	}
@@ -161,7 +195,7 @@ func TestRedirectIncrementsClickCount(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Check click count again
-	db.First(&updatedLink, link.ID)
+	db.First(&updatedLink, "id = ?", link.ID)
 	if updatedLink.ClickCount != 2 {
 		t.Errorf("Expected click count 2, got %d", updatedLink.ClickCount)
 	}

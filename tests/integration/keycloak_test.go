@@ -444,11 +444,17 @@ func TestSCIMIntegration(t *testing.T) {
 	// Create admin and get token
 	adminToken := createAdminUser(t, db, router)
 
+	// Get the global organization ID
+	var globalOrg models.Organization
+	if err := db.Where("is_global = ?", true).First(&globalOrg).Error; err != nil {
+		t.Fatalf("Failed to get global org: %v", err)
+	}
+
 	var scimToken string
 
-	// Create SCIM token (organization_id 1 is the global org created in setup)
+	// Create SCIM token using the global org ID
 	t.Run("CreateSCIMToken", func(t *testing.T) {
-		body := `{"organization_id":1,"description":"Integration Test Token"}`
+		body := fmt.Sprintf(`{"organization_id":"%s","description":"Integration Test Token"}`, globalOrg.ID)
 		req, _ := http.NewRequest("POST", "/api/admin/scim-tokens", strings.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+adminToken)
 		req.Header.Set("Content-Type", "application/json")

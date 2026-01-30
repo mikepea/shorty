@@ -165,7 +165,7 @@ func TestGetUser(t *testing.T) {
 
 	r.GET("/scim/v2/Users/:id", h.GetUser)
 
-	req := httptest.NewRequest("GET", "/scim/v2/Users/1", nil)
+	req := httptest.NewRequest("GET", "/scim/v2/Users/"+user.ID, nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -186,7 +186,7 @@ func TestPatchUserActive(t *testing.T) {
 	r := setupTestRouter()
 	h := NewUserHandler(db, "http://localhost:8080")
 
-	createTestUser(t, db, "test@test.com", "Test User")
+	user := createTestUser(t, db, "test@test.com", "Test User")
 
 	r.PATCH("/scim/v2/Users/:id", h.PatchUser)
 
@@ -202,7 +202,7 @@ func TestPatchUserActive(t *testing.T) {
 	}
 	jsonBody, _ := json.Marshal(patch)
 
-	req := httptest.NewRequest("PATCH", "/scim/v2/Users/1", bytes.NewReader(jsonBody))
+	req := httptest.NewRequest("PATCH", "/scim/v2/Users/"+user.ID, bytes.NewReader(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
@@ -211,10 +211,10 @@ func TestPatchUserActive(t *testing.T) {
 		t.Errorf("Expected status 200, got %d: %s", w.Code, w.Body.String())
 	}
 
-	var user User
-	json.Unmarshal(w.Body.Bytes(), &user)
+	var respUser User
+	json.Unmarshal(w.Body.Bytes(), &respUser)
 
-	if user.Active != false {
+	if respUser.Active != false {
 		t.Errorf("Expected active to be false")
 	}
 }
@@ -224,11 +224,11 @@ func TestDeleteUser(t *testing.T) {
 	r := setupTestRouter()
 	h := NewUserHandler(db, "http://localhost:8080")
 
-	createTestUser(t, db, "test@test.com", "Test User")
+	user := createTestUser(t, db, "test@test.com", "Test User")
 
 	r.DELETE("/scim/v2/Users/:id", h.DeleteUser)
 
-	req := httptest.NewRequest("DELETE", "/scim/v2/Users/1", nil)
+	req := httptest.NewRequest("DELETE", "/scim/v2/Users/"+user.ID, nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -320,14 +320,14 @@ func TestPatchGroupMembers(t *testing.T) {
 				Op:   "add",
 				Path: "members",
 				Value: []map[string]interface{}{
-					{"value": "1"},
+					{"value": user.ID},
 				},
 			},
 		},
 	}
 	jsonBody, _ := json.Marshal(patch)
 
-	req := httptest.NewRequest("PATCH", "/scim/v2/Groups/1", bytes.NewReader(jsonBody))
+	req := httptest.NewRequest("PATCH", "/scim/v2/Groups/"+group.ID, bytes.NewReader(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
@@ -392,7 +392,7 @@ func TestSCIMTokenGeneration(t *testing.T) {
 	}
 
 	if scimToken.OrganizationID != org.ID {
-		t.Errorf("Expected organization ID %d, got %d", org.ID, scimToken.OrganizationID)
+		t.Errorf("Expected organization ID %s, got %s", org.ID, scimToken.OrganizationID)
 	}
 
 	// Validate the token
@@ -402,7 +402,7 @@ func TestSCIMTokenGeneration(t *testing.T) {
 	}
 
 	if validatedToken.ID != scimToken.ID {
-		t.Errorf("Expected token ID %d, got %d", scimToken.ID, validatedToken.ID)
+		t.Errorf("Expected token ID %s, got %s", scimToken.ID, validatedToken.ID)
 	}
 }
 

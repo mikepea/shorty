@@ -2,7 +2,6 @@ package auth
 
 import (
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -83,12 +82,12 @@ func RequireAdmin() gin.HandlerFunc {
 }
 
 // GetUserID returns the user ID from the gin context
-func GetUserID(c *gin.Context) (uint, bool) {
+func GetUserID(c *gin.Context) (string, bool) {
 	userID, exists := c.Get(ContextKeyUserID)
 	if !exists {
-		return 0, false
+		return "", false
 	}
-	return userID.(uint), true
+	return userID.(string), true
 }
 
 // GetEmail returns the email from the gin context
@@ -110,12 +109,12 @@ func GetSystemRole(c *gin.Context) (string, bool) {
 }
 
 // GetOrgID returns the organization ID from the gin context
-func GetOrgID(c *gin.Context) (uint, bool) {
+func GetOrgID(c *gin.Context) (string, bool) {
 	orgID, exists := c.Get(ContextKeyOrgID)
 	if !exists {
-		return 0, false
+		return "", false
 	}
-	return orgID.(uint), true
+	return orgID.(string), true
 }
 
 // GetOrgRole returns the organization role from the gin context
@@ -139,26 +138,16 @@ func OrgMiddleware(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// Get organization ID from header or query param
-		orgIDStr := c.GetHeader("X-Organization-ID")
-		if orgIDStr == "" {
-			orgIDStr = c.Query("org_id")
+		// Get organization ID from header or query param (now a CUID string)
+		orgID := c.GetHeader("X-Organization-ID")
+		if orgID == "" {
+			orgID = c.Query("org_id")
 		}
 
-		var orgID uint
 		var membership models.OrganizationMembership
 
-		if orgIDStr != "" {
-			// Parse the provided org ID
-			parsed, err := strconv.ParseUint(orgIDStr, 10, 32)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid organization ID"})
-				c.Abort()
-				return
-			}
-			orgID = uint(parsed)
-
-			// Verify membership
+		if orgID != "" {
+			// Verify membership with the provided org ID
 			if err := db.Where("user_id = ? AND organization_id = ?", userID, orgID).First(&membership).Error; err != nil {
 				c.JSON(http.StatusForbidden, gin.H{"error": "Not a member of this organization"})
 				c.Abort()
@@ -179,7 +168,7 @@ func OrgMiddleware(db *gorm.DB) gin.HandlerFunc {
 				// User not yet a member of global org - auto-add them as member
 				membership = models.OrganizationMembership{
 					OrganizationID: orgID,
-					UserID:         userID.(uint),
+					UserID:         userID.(string),
 					Role:           models.OrgRoleMember,
 				}
 				if err := db.Create(&membership).Error; err != nil {

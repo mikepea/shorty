@@ -4,7 +4,6 @@ import (
 	"math/rand"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -48,8 +47,8 @@ type UpdateLinkRequest struct {
 
 // LinkResponse represents a link in API responses
 type LinkResponse struct {
-	ID          uint   `json:"id"`
-	GroupID     uint   `json:"group_id"`
+	ID          string `json:"id"`
+	GroupID     string `json:"group_id"`
 	Slug        string `json:"slug"`
 	URL         string `json:"url"`
 	Title       string `json:"title"`
@@ -87,12 +86,12 @@ func (e *ValidationError) Error() string {
 }
 
 // validateSlug checks if a slug is valid and available (deprecated - use validateSlugForOrg)
-func (h *Handler) validateSlug(slug string, excludeID uint) error {
-	return h.validateSlugForOrg(slug, excludeID, 0)
+func (h *Handler) validateSlug(slug string, excludeID string) error {
+	return h.validateSlugForOrg(slug, excludeID, "")
 }
 
 // validateSlugForOrg checks if a slug is valid and available within an organization
-func (h *Handler) validateSlugForOrg(slug string, excludeID uint, orgID uint) error {
+func (h *Handler) validateSlugForOrg(slug string, excludeID string, orgID string) error {
 	if slug == "" {
 		return nil
 	}
@@ -113,7 +112,7 @@ func (h *Handler) validateSlugForOrg(slug string, excludeID uint, orgID uint) er
 	// Check uniqueness within organization
 	var existing models.Link
 	query := h.db.Where("organization_id = ? AND slug = ?", orgID, slug)
-	if excludeID > 0 {
+	if excludeID != "" {
 		query = query.Where("id != ?", excludeID)
 	}
 	if err := query.First(&existing).Error; err == nil {
@@ -135,11 +134,11 @@ func generateRandomString(length int, charset string) string {
 
 // generateSlug creates a unique slug (deprecated - use generateSlugForOrg)
 func (h *Handler) generateSlug() string {
-	return h.generateSlugForOrg(0)
+	return h.generateSlugForOrg("")
 }
 
 // generateSlugForOrg creates a unique slug within an organization
-func (h *Handler) generateSlugForOrg(orgID uint) string {
+func (h *Handler) generateSlugForOrg(orgID string) string {
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 	const length = 8
 
@@ -156,7 +155,7 @@ func (h *Handler) generateSlugForOrg(orgID uint) string {
 }
 
 // checkGroupMembership verifies the user is a member of the group
-func (h *Handler) checkGroupMembership(userID, groupID uint) error {
+func (h *Handler) checkGroupMembership(userID, groupID string) error {
 	var membership models.GroupMembership
 	if err := h.db.Where("user_id = ? AND group_id = ?", userID, groupID).First(&membership).Error; err != nil {
 		return err
@@ -179,14 +178,10 @@ func (h *Handler) checkGroupMembership(userID, groupID uint) error {
 // @Router /groups/{id}/links [get]
 func (h *Handler) ListByGroup(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-		return
-	}
+	groupID := c.Param("id")
 
 	// Check membership
-	if err := h.checkGroupMembership(userID, uint(groupID)); err != nil {
+	if err := h.checkGroupMembership(userID, groupID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})
 		return
 	}
@@ -230,21 +225,17 @@ func (h *Handler) ListByGroup(c *gin.Context) {
 // @Router /groups/{id}/links [post]
 func (h *Handler) Create(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-		return
-	}
+	groupID := c.Param("id")
 
 	// Check membership
-	if err := h.checkGroupMembership(userID, uint(groupID)); err != nil {
+	if err := h.checkGroupMembership(userID, groupID); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})
 		return
 	}
 
 	// Get the group to find its organization
 	var group models.Group
-	if err := h.db.First(&group, groupID).Error; err != nil {
+	if err := h.db.First(&group, "id = ?", groupID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})
 		return
 	}
@@ -260,7 +251,7 @@ func (h *Handler) Create(c *gin.Context) {
 	if slug == "" {
 		slug = h.generateSlugForOrg(group.OrganizationID)
 	} else {
-		if err := h.validateSlugForOrg(slug, 0, group.OrganizationID); err != nil {
+		if err := h.validateSlugForOrg(slug, "", group.OrganizationID); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -268,7 +259,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	link := models.Link{
 		OrganizationID: group.OrganizationID,
-		GroupID:        uint(groupID),
+		GroupID:        groupID,
 		CreatedByID:    userID,
 		Slug:           slug,
 		URL:            req.URL,
@@ -445,7 +436,7 @@ func (h *Handler) Search(c *gin.Context) {
 		return
 	}
 
-	groupIDs := make([]uint, len(memberships))
+	groupIDs := make([]string, len(memberships))
 	for i, m := range memberships {
 		groupIDs[i] = m.GroupID
 	}
@@ -482,7 +473,7 @@ func (h *Handler) Search(c *gin.Context) {
 	// Pagination
 	limit := 50
 	if l := c.Query("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
+		if parsed := parseInt(l); parsed > 0 && parsed <= 100 {
 			limit = parsed
 		}
 	}
@@ -490,7 +481,7 @@ func (h *Handler) Search(c *gin.Context) {
 
 	offset := 0
 	if o := c.Query("offset"); o != "" {
-		if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
+		if parsed := parseInt(o); parsed >= 0 {
 			offset = parsed
 		}
 	}
@@ -508,6 +499,18 @@ func (h *Handler) Search(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, responses)
+}
+
+// parseInt is a helper that parses a string to int, returning 0 on error
+func parseInt(s string) int {
+	var result int
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return 0
+		}
+		result = result*10 + int(c-'0')
+	}
+	return result
 }
 
 // RegisterRoutes registers link routes

@@ -157,7 +157,7 @@ func (h *ConfigHandler) RegisterRoutes(rg *gin.RouterGroup) {
 // SCIM Token management
 
 // GenerateSCIMToken creates a new SCIM bearer token for an organization
-func GenerateSCIMToken(db *gorm.DB, organizationID uint, description string) (string, *models.SCIMToken, error) {
+func GenerateSCIMToken(db *gorm.DB, organizationID string, description string) (string, *models.SCIMToken, error) {
 	// Generate random token
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
@@ -251,17 +251,17 @@ func SCIMAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 }
 
 // GetSCIMOrgID returns the organization ID from SCIM context
-func GetSCIMOrgID(c *gin.Context) (uint, bool) {
+func GetSCIMOrgID(c *gin.Context) (string, bool) {
 	orgID, exists := c.Get(ContextKeySCIMOrgID)
 	if !exists {
-		return 0, false
+		return "", false
 	}
-	return orgID.(uint), true
+	return orgID.(string), true
 }
 
 // TokenResponse represents a SCIM token in API responses
 type TokenResponse struct {
-	ID          uint       `json:"id"`
+	ID          string     `json:"id"`
 	TokenPrefix string     `json:"token_prefix"`
 	Description string     `json:"description"`
 	LastUsedAt  *time.Time `json:"last_used_at"`
@@ -270,7 +270,7 @@ type TokenResponse struct {
 
 // CreateTokenResponse includes the full token (only shown on creation)
 type CreateTokenResponse struct {
-	ID          uint      `json:"id"`
+	ID          string    `json:"id"`
 	Token       string    `json:"token"`
 	TokenPrefix string    `json:"token_prefix"`
 	Description string    `json:"description"`
@@ -308,7 +308,7 @@ func (h *TokenHandler) ListTokens(c *gin.Context) {
 
 // CreateTokenRequest represents a request to create a SCIM token with organization
 type CreateTokenRequest struct {
-	OrganizationID uint   `json:"organization_id" binding:"required"`
+	OrganizationID string `json:"organization_id" binding:"required"`
 	Description    string `json:"description"`
 }
 
@@ -322,7 +322,7 @@ func (h *TokenHandler) CreateToken(c *gin.Context) {
 
 	// Verify organization exists
 	var org models.Organization
-	if err := h.db.First(&org, req.OrganizationID).Error; err != nil {
+	if err := h.db.First(&org, "id = ?", req.OrganizationID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
 		return
 	}
@@ -347,7 +347,7 @@ func (h *TokenHandler) DeleteToken(c *gin.Context) {
 	id := c.Param("id")
 
 	var token models.SCIMToken
-	if err := h.db.First(&token, id).Error; err != nil {
+	if err := h.db.First(&token, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Token not found"})
 		return
 	}

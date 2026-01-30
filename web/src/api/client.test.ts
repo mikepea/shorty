@@ -209,10 +209,10 @@ describe('API Client', () => {
         json: () => Promise.resolve({ id: 1, slug: 'new-link' }),
       } as Response);
 
-      await links.create(5, { url: 'https://example.com', title: 'Example' });
+      await links.create('grp_abc123', { url: 'https://example.com', title: 'Example' });
 
       expect(fetch).toHaveBeenCalledWith(
-        '/api/groups/5/links',
+        '/api/groups/grp_abc123/links',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ url: 'https://example.com', title: 'Example' }),
@@ -292,10 +292,10 @@ describe('API Client', () => {
         json: () => Promise.resolve({ id: 1, user_id: 2, group_id: 1, role: 'member' }),
       } as Response);
 
-      await groups.addMember(1, 'user@example.com', 'member');
+      await groups.addMember('grp_abc123', 'user@example.com', 'member');
 
       expect(fetch).toHaveBeenCalledWith(
-        '/api/groups/1/members',
+        '/api/groups/grp_abc123/members',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ email: 'user@example.com', role: 'member' }),
@@ -343,10 +343,10 @@ describe('API Client', () => {
         json: () => Promise.resolve({ message: 'Deleted' }),
       } as Response);
 
-      await apiKeys.delete(123);
+      await apiKeys.delete('key_abc123');
 
       expect(fetch).toHaveBeenCalledWith(
-        '/api/api-keys/123',
+        '/api/api-keys/key_abc123',
         expect.objectContaining({ method: 'DELETE' })
       );
     });

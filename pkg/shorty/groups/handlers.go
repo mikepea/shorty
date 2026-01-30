@@ -2,7 +2,6 @@ package groups
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mikepea/shorty/pkg/shorty/auth"
@@ -24,7 +23,7 @@ func NewHandler(db *gorm.DB) *Handler {
 type CreateGroupRequest struct {
 	Name           string `json:"name" binding:"required"`
 	Description    string `json:"description"`
-	OrganizationID uint   `json:"organization_id"` // Optional - defaults to org from context or global
+	OrganizationID string `json:"organization_id"` // Optional - defaults to org from context or global
 }
 
 // UpdateGroupRequest represents the request to update a group
@@ -35,7 +34,7 @@ type UpdateGroupRequest struct {
 
 // GroupResponse represents a group in API responses
 type GroupResponse struct {
-	ID          uint   `json:"id"`
+	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Role        string `json:"role,omitempty"` // User's role in this group
@@ -101,7 +100,7 @@ func (h *Handler) Create(c *gin.Context) {
 	// 2. Use context if OrgMiddleware set it
 	// 3. Default to global organization
 	orgID := req.OrganizationID
-	if orgID == 0 {
+	if orgID == "" {
 		if ctxOrgID, ok := auth.GetOrgID(c); ok {
 			orgID = ctxOrgID
 		} else {
@@ -162,18 +161,14 @@ func (h *Handler) Create(c *gin.Context) {
 // @Description Get details of a specific group
 // @Tags groups
 // @Produce json
-// @Param id path int true "Group ID"
+// @Param id path string true "Group ID"
 // @Success 200 {object} GroupResponse
 // @Failure 404 {object} map[string]string "Group not found"
 // @Security BearerAuth
 // @Router /groups/{id} [get]
 func (h *Handler) Get(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-		return
-	}
+	groupID := c.Param("id")
 
 	// Check membership
 	var membership models.GroupMembership
@@ -183,7 +178,7 @@ func (h *Handler) Get(c *gin.Context) {
 	}
 
 	var group models.Group
-	if err := h.db.First(&group, groupID).Error; err != nil {
+	if err := h.db.First(&group, "id = ?", groupID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})
 		return
 	}
@@ -206,7 +201,7 @@ func (h *Handler) Get(c *gin.Context) {
 // @Tags groups
 // @Accept json
 // @Produce json
-// @Param id path int true "Group ID"
+// @Param id path string true "Group ID"
 // @Param request body UpdateGroupRequest true "Updated group details"
 // @Success 200 {object} GroupResponse
 // @Failure 400 {object} map[string]string "Validation error"
@@ -215,11 +210,7 @@ func (h *Handler) Get(c *gin.Context) {
 // @Router /groups/{id} [put]
 func (h *Handler) Update(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-		return
-	}
+	groupID := c.Param("id")
 
 	// Check admin membership
 	var membership models.GroupMembership
@@ -235,7 +226,7 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	var group models.Group
-	if err := h.db.First(&group, groupID).Error; err != nil {
+	if err := h.db.First(&group, "id = ?", groupID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})
 		return
 	}
@@ -270,18 +261,14 @@ func (h *Handler) Update(c *gin.Context) {
 // @Description Delete a group (requires admin role in group)
 // @Tags groups
 // @Produce json
-// @Param id path int true "Group ID"
+// @Param id path string true "Group ID"
 // @Success 200 {object} map[string]string "Group deleted"
 // @Failure 403 {object} map[string]string "Admin access required"
 // @Security BearerAuth
 // @Router /groups/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
-	groupID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid group ID"})
-		return
-	}
+	groupID := c.Param("id")
 
 	// Check admin membership
 	if err := h.db.Where("user_id = ? AND group_id = ? AND role = ?", userID, groupID, models.GroupRoleAdmin).First(&models.GroupMembership{}).Error; err != nil {
@@ -290,7 +277,7 @@ func (h *Handler) Delete(c *gin.Context) {
 	}
 
 	// Delete group (cascades to memberships via soft delete)
-	if err := h.db.Delete(&models.Group{}, groupID).Error; err != nil {
+	if err := h.db.Delete(&models.Group{}, "id = ?", groupID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete group"})
 		return
 	}

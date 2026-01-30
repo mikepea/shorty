@@ -53,7 +53,7 @@ func TestPasswordHashing(t *testing.T) {
 }
 
 func TestJWTToken(t *testing.T) {
-	token, err := GenerateToken(1, "test@example.com", "user")
+	token, err := GenerateToken("usr_abc123", "test@example.com", "user")
 	if err != nil {
 		t.Fatalf("GenerateToken failed: %v", err)
 	}
@@ -63,8 +63,8 @@ func TestJWTToken(t *testing.T) {
 		t.Fatalf("ValidateToken failed: %v", err)
 	}
 
-	if claims.UserID != 1 {
-		t.Errorf("Expected UserID 1, got %d", claims.UserID)
+	if claims.UserID != "usr_abc123" {
+		t.Errorf("Expected UserID usr_abc123, got %s", claims.UserID)
 	}
 
 	if claims.Email != "test@example.com" {

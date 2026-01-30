@@ -30,14 +30,14 @@ func (h *GroupHandler) groupToSCIM(group *models.Group, includeMembers bool) Gro
 
 	scimGroup := Group{
 		Schemas:     []string{SchemaGroup},
-		ID:          strconv.FormatUint(uint64(group.ID), 10),
+		ID:          group.ID,
 		ExternalID:  group.ExternalID,
 		DisplayName: group.Name,
 		Meta: Meta{
 			ResourceType: "Group",
 			Created:      &created,
 			LastModified: &updated,
-			Location:     fmt.Sprintf("%s/scim/v2/Groups/%d", h.baseURL, group.ID),
+			Location:     fmt.Sprintf("%s/scim/v2/Groups/%s", h.baseURL, group.ID),
 		},
 	}
 
@@ -48,8 +48,8 @@ func (h *GroupHandler) groupToSCIM(group *models.Group, includeMembers bool) Gro
 		members := make([]GroupMember, len(memberships))
 		for i, m := range memberships {
 			members[i] = GroupMember{
-				Value:   strconv.FormatUint(uint64(m.UserID), 10),
-				Ref:     fmt.Sprintf("%s/scim/v2/Users/%d", h.baseURL, m.UserID),
+				Value:   m.UserID,
+				Ref:     fmt.Sprintf("%s/scim/v2/Users/%s", h.baseURL, m.UserID),
 				Display: m.User.Name,
 			}
 		}
@@ -116,18 +116,10 @@ func (h *GroupHandler) ListGroups(c *gin.Context) {
 
 // GetGroup returns a single group (GET /scim/v2/Groups/:id)
 func (h *GroupHandler) GetGroup(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Schemas: []string{SchemaError},
-			Detail:  "Invalid group ID",
-			Status:  "400",
-		})
-		return
-	}
+	id := c.Param("id")
 
 	var group models.Group
-	if err := h.db.First(&group, id).Error; err != nil {
+	if err := h.db.First(&group, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{
 			Schemas: []string{SchemaError},
 			Detail:  "Group not found",
@@ -182,13 +174,9 @@ func (h *GroupHandler) CreateGroup(c *gin.Context) {
 
 		// Add members
 		for _, member := range req.Members {
-			userID, err := strconv.ParseUint(member.Value, 10, 32)
-			if err != nil {
-				continue
-			}
-
+			// member.Value is now a string (the user ID)
 			membership := models.GroupMembership{
-				UserID:  uint(userID),
+				UserID:  member.Value,
 				GroupID: group.ID,
 				Role:    models.GroupRoleMember,
 			}
@@ -215,18 +203,10 @@ func (h *GroupHandler) CreateGroup(c *gin.Context) {
 
 // UpdateGroup replaces a group (PUT /scim/v2/Groups/:id)
 func (h *GroupHandler) UpdateGroup(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Schemas: []string{SchemaError},
-			Detail:  "Invalid group ID",
-			Status:  "400",
-		})
-		return
-	}
+	id := c.Param("id")
 
 	var group models.Group
-	if err := h.db.First(&group, id).Error; err != nil {
+	if err := h.db.First(&group, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{
 			Schemas: []string{SchemaError},
 			Detail:  "Group not found",
@@ -245,7 +225,7 @@ func (h *GroupHandler) UpdateGroup(c *gin.Context) {
 		return
 	}
 
-	err = h.db.Transaction(func(tx *gorm.DB) error {
+	err := h.db.Transaction(func(tx *gorm.DB) error {
 		// Update group
 		group.Name = req.DisplayName
 		if req.ExternalID != "" {
@@ -261,13 +241,9 @@ func (h *GroupHandler) UpdateGroup(c *gin.Context) {
 		tx.Where("group_id = ?", group.ID).Delete(&models.GroupMembership{})
 
 		for _, member := range req.Members {
-			userID, err := strconv.ParseUint(member.Value, 10, 32)
-			if err != nil {
-				continue
-			}
-
+			// member.Value is now a string (the user ID)
 			membership := models.GroupMembership{
-				UserID:  uint(userID),
+				UserID:  member.Value,
 				GroupID: group.ID,
 				Role:    models.GroupRoleMember,
 			}
@@ -291,18 +267,10 @@ func (h *GroupHandler) UpdateGroup(c *gin.Context) {
 
 // PatchGroup patches a group (PATCH /scim/v2/Groups/:id)
 func (h *GroupHandler) PatchGroup(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Schemas: []string{SchemaError},
-			Detail:  "Invalid group ID",
-			Status:  "400",
-		})
-		return
-	}
+	id := c.Param("id")
 
 	var group models.Group
-	if err := h.db.First(&group, id).Error; err != nil {
+	if err := h.db.First(&group, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{
 			Schemas: []string{SchemaError},
 			Detail:  "Group not found",
@@ -321,7 +289,7 @@ func (h *GroupHandler) PatchGroup(c *gin.Context) {
 		return
 	}
 
-	err = h.db.Transaction(func(tx *gorm.DB) error {
+	err := h.db.Transaction(func(tx *gorm.DB) error {
 		for _, op := range patch.Operations {
 			switch strings.ToLower(op.Op) {
 			case "replace":
@@ -368,14 +336,12 @@ func (h *GroupHandler) applyReplaceOp(tx *gorm.DB, group *models.Group, op Patch
 			for _, m := range members {
 				if memberMap, ok := m.(map[string]interface{}); ok {
 					if value, ok := memberMap["value"].(string); ok {
-						userID, err := strconv.ParseUint(value, 10, 32)
-						if err == nil {
-							tx.Create(&models.GroupMembership{
-								UserID:  uint(userID),
-								GroupID: group.ID,
-								Role:    models.GroupRoleMember,
-							})
-						}
+						// value is now used directly as the user ID string
+						tx.Create(&models.GroupMembership{
+							UserID:  value,
+							GroupID: group.ID,
+							Role:    models.GroupRoleMember,
+						})
 					}
 				}
 			}
@@ -400,33 +366,29 @@ func (h *GroupHandler) applyAddOp(tx *gorm.DB, group *models.Group, op PatchOper
 			for _, m := range v {
 				if memberMap, ok := m.(map[string]interface{}); ok {
 					if value, ok := memberMap["value"].(string); ok {
-						userID, err := strconv.ParseUint(value, 10, 32)
-						if err == nil {
-							tx.FirstOrCreate(&models.GroupMembership{
-								UserID:  uint(userID),
-								GroupID: group.ID,
-							}, models.GroupMembership{
-								UserID:  uint(userID),
-								GroupID: group.ID,
-								Role:    models.GroupRoleMember,
-							})
-						}
+						// value is now used directly as the user ID string
+						tx.FirstOrCreate(&models.GroupMembership{
+							UserID:  value,
+							GroupID: group.ID,
+						}, models.GroupMembership{
+							UserID:  value,
+							GroupID: group.ID,
+							Role:    models.GroupRoleMember,
+						})
 					}
 				}
 			}
 		case map[string]interface{}:
 			if value, ok := v["value"].(string); ok {
-				userID, err := strconv.ParseUint(value, 10, 32)
-				if err == nil {
-					tx.FirstOrCreate(&models.GroupMembership{
-						UserID:  uint(userID),
-						GroupID: group.ID,
-					}, models.GroupMembership{
-						UserID:  uint(userID),
-						GroupID: group.ID,
-						Role:    models.GroupRoleMember,
-					})
-				}
+				// value is now used directly as the user ID string
+				tx.FirstOrCreate(&models.GroupMembership{
+					UserID:  value,
+					GroupID: group.ID,
+				}, models.GroupMembership{
+					UserID:  value,
+					GroupID: group.ID,
+					Role:    models.GroupRoleMember,
+				})
 			}
 		}
 	}
@@ -442,11 +404,9 @@ func (h *GroupHandler) applyRemoveOp(tx *gorm.DB, group *models.Group, op PatchO
 		start := strings.Index(path, "\"")
 		end := strings.LastIndex(path, "\"")
 		if start != -1 && end != -1 && start < end {
-			userIDStr := path[start+1 : end]
-			userID, err := strconv.ParseUint(userIDStr, 10, 32)
-			if err == nil {
-				tx.Where("group_id = ? AND user_id = ?", group.ID, userID).Delete(&models.GroupMembership{})
-			}
+			userID := path[start+1 : end]
+			// userID is now used directly as a string
+			tx.Where("group_id = ? AND user_id = ?", group.ID, userID).Delete(&models.GroupMembership{})
 		}
 	} else if path == "members" {
 		// Remove all members
@@ -458,18 +418,10 @@ func (h *GroupHandler) applyRemoveOp(tx *gorm.DB, group *models.Group, op PatchO
 
 // DeleteGroup deletes a group (DELETE /scim/v2/Groups/:id)
 func (h *GroupHandler) DeleteGroup(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Schemas: []string{SchemaError},
-			Detail:  "Invalid group ID",
-			Status:  "400",
-		})
-		return
-	}
+	id := c.Param("id")
 
 	var group models.Group
-	if err := h.db.First(&group, id).Error; err != nil {
+	if err := h.db.First(&group, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, ErrorResponse{
 			Schemas: []string{SchemaError},
 			Detail:  "Group not found",
@@ -478,7 +430,7 @@ func (h *GroupHandler) DeleteGroup(c *gin.Context) {
 		return
 	}
 
-	err = h.db.Transaction(func(tx *gorm.DB) error {
+	err := h.db.Transaction(func(tx *gorm.DB) error {
 		tx.Where("group_id = ?", group.ID).Delete(&models.GroupMembership{})
 		tx.Where("group_id = ?", group.ID).Delete(&models.Link{})
 		return tx.Delete(&group).Error

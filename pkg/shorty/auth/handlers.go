@@ -39,7 +39,7 @@ type AuthResponse struct {
 
 // UserResponse represents user data in responses
 type UserResponse struct {
-	ID          uint   `json:"id"`
+	ID          string `json:"id"`
 	Email       string `json:"email"`
 	Name        string `json:"name"`
 	SystemRole  string `json:"system_role"`
@@ -206,7 +206,7 @@ func (h *Handler) Me(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := h.db.First(&user, userID).Error; err != nil {
+	if err := h.db.First(&user, "id = ?", userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
@@ -258,7 +258,7 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 
 	// Find user
 	var user models.User
-	if err := h.db.First(&user, userID).Error; err != nil {
+	if err := h.db.First(&user, "id = ?", userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}

@@ -159,7 +159,7 @@ func TestGetGroup(t *testing.T) {
 	}
 	db.Create(&membership)
 
-	req, _ := http.NewRequest("GET", "/groups/1", nil)
+	req, _ := http.NewRequest("GET", "/groups/"+group.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 
@@ -186,7 +186,7 @@ func TestGetGroupNotMember(t *testing.T) {
 	group := models.Group{Name: "Test Group"}
 	db.Create(&group)
 
-	req, _ := http.NewRequest("GET", "/groups/1", nil)
+	req, _ := http.NewRequest("GET", "/groups/"+group.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 
@@ -214,7 +214,7 @@ func TestUpdateGroup(t *testing.T) {
 	body := UpdateGroupRequest{Name: "Updated Group"}
 	jsonBody, _ := json.Marshal(body)
 
-	req, _ := http.NewRequest("PUT", "/groups/1", bytes.NewBuffer(jsonBody))
+	req, _ := http.NewRequest("PUT", "/groups/"+group.ID, bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
@@ -250,7 +250,7 @@ func TestUpdateGroupNotAdmin(t *testing.T) {
 	body := UpdateGroupRequest{Name: "Updated Group"}
 	jsonBody, _ := json.Marshal(body)
 
-	req, _ := http.NewRequest("PUT", "/groups/1", bytes.NewBuffer(jsonBody))
+	req, _ := http.NewRequest("PUT", "/groups/"+group.ID, bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
@@ -276,7 +276,7 @@ func TestListMembers(t *testing.T) {
 	}
 	db.Create(&membership)
 
-	req, _ := http.NewRequest("GET", "/groups/1/members", nil)
+	req, _ := http.NewRequest("GET", "/groups/"+group.ID+"/members", nil)
 	req.Header.Set("Authorization", getAuthHeader(user))
 	resp := httptest.NewRecorder()
 
@@ -315,7 +315,7 @@ func TestAddMember(t *testing.T) {
 	}
 	jsonBody, _ := json.Marshal(body)
 
-	req, _ := http.NewRequest("POST", "/groups/1/members", bytes.NewBuffer(jsonBody))
+	req, _ := http.NewRequest("POST", "/groups/"+group.ID+"/members", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", getAuthHeader(admin))
 	resp := httptest.NewRecorder()
@@ -353,7 +353,7 @@ func TestRemoveMember(t *testing.T) {
 		Role:    models.GroupRoleMember,
 	})
 
-	req, _ := http.NewRequest("DELETE", "/groups/1/members/2", nil)
+	req, _ := http.NewRequest("DELETE", "/groups/"+group.ID+"/members/"+member.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(admin))
 	resp := httptest.NewRecorder()
 
@@ -378,7 +378,7 @@ func TestCannotRemoveLastAdmin(t *testing.T) {
 	})
 
 	// Try to remove self (last admin)
-	req, _ := http.NewRequest("DELETE", "/groups/1/members/1", nil)
+	req, _ := http.NewRequest("DELETE", "/groups/"+group.ID+"/members/"+admin.ID, nil)
 	req.Header.Set("Authorization", getAuthHeader(admin))
 	resp := httptest.NewRecorder()
 

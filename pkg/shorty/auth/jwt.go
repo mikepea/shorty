@@ -15,7 +15,7 @@ var (
 
 // Claims represents the JWT claims
 type Claims struct {
-	UserID     uint   `json:"user_id"`
+	UserID     string `json:"user_id"`
 	Email      string `json:"email"`
 	SystemRole string `json:"system_role"`
 	jwt.RegisteredClaims
@@ -38,7 +38,7 @@ func getTokenDuration() time.Duration {
 }
 
 // GenerateToken creates a new JWT token for a user
-func GenerateToken(userID uint, email string, systemRole string) (string, error) {
+func GenerateToken(userID string, email string, systemRole string) (string, error) {
 	claims := &Claims{
 		UserID:     userID,
 		Email:      email,

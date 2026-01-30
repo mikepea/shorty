@@ -21,8 +21,8 @@ func NewHandler(db *gorm.DB) *Handler {
 
 // resolveOrgFromHost looks up an organization by the request's Host header.
 // If no matching domain is found, returns the global organization ID.
-// Returns 0 if neither can be found (shouldn't happen if DB is properly seeded).
-func (h *Handler) resolveOrgFromHost(c *gin.Context) uint {
+// Returns empty string if neither can be found (shouldn't happen if DB is properly seeded).
+func (h *Handler) resolveOrgFromHost(c *gin.Context) string {
 	host := c.Request.Host
 
 	// Remove port if present (e.g., "localhost:8080" -> "localhost")
@@ -42,7 +42,7 @@ func (h *Handler) resolveOrgFromHost(c *gin.Context) uint {
 		return globalOrg.ID
 	}
 
-	return 0
+	return ""
 }
 
 // Redirect handles short URL redirects
@@ -55,7 +55,7 @@ func (h *Handler) Redirect(c *gin.Context) {
 
 	// Resolve organization from Host header
 	orgID := h.resolveOrgFromHost(c)
-	if orgID == 0 {
+	if orgID == "" {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Organization not found"})
 		return
 	}
