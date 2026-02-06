@@ -105,6 +105,13 @@ func (e *ValidationError) Error() string {
 }
 
 // List returns all organizations the current user is a member of
+// @Summary List organizations
+// @Description Get all organizations the current user is a member of
+// @Tags organizations
+// @Produce json
+// @Success 200 {array} OrgResponse
+// @Security BearerAuth
+// @Router /organizations [get]
 func (h *Handler) List(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 
@@ -134,6 +141,16 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // Create creates a new organization and adds the creator as admin
+// @Summary Create an organization
+// @Description Create a new organization with the current user as admin
+// @Tags organizations
+// @Accept json
+// @Produce json
+// @Param request body CreateOrgRequest true "Organization details"
+// @Success 201 {object} OrgResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Security BearerAuth
+// @Router /organizations [post]
 func (h *Handler) Create(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 
@@ -184,6 +201,15 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 // Get returns a specific organization
+// @Summary Get an organization
+// @Description Get details of a specific organization
+// @Tags organizations
+// @Produce json
+// @Param id path string true "Organization ID"
+// @Success 200 {object} OrgResponse
+// @Failure 404 {object} map[string]string "Organization not found"
+// @Security BearerAuth
+// @Router /organizations/{id} [get]
 func (h *Handler) Get(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	orgID := c.Param("id")
@@ -219,6 +245,18 @@ func (h *Handler) Get(c *gin.Context) {
 }
 
 // Update updates an organization (admin only)
+// @Summary Update an organization
+// @Description Update an organization (requires admin role)
+// @Tags organizations
+// @Accept json
+// @Produce json
+// @Param id path string true "Organization ID"
+// @Param request body UpdateOrgRequest true "Updated organization details"
+// @Success 200 {object} OrgResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 403 {object} map[string]string "Admin access required"
+// @Security BearerAuth
+// @Router /organizations/{id} [put]
 func (h *Handler) Update(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	orgID := c.Param("id")
@@ -274,6 +312,15 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 // Delete deletes an organization (admin only, soft delete)
+// @Summary Delete an organization
+// @Description Delete an organization (requires admin role)
+// @Tags organizations
+// @Produce json
+// @Param id path string true "Organization ID"
+// @Success 200 {object} map[string]string "Organization deleted"
+// @Failure 403 {object} map[string]string "Admin access required"
+// @Security BearerAuth
+// @Router /organizations/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	orgID := c.Param("id")
@@ -307,6 +354,15 @@ func (h *Handler) Delete(c *gin.Context) {
 }
 
 // ListMembers returns all members of an organization
+// @Summary List organization members
+// @Description Get all members of an organization
+// @Tags organizations
+// @Produce json
+// @Param id path string true "Organization ID"
+// @Success 200 {array} MemberResponse
+// @Failure 404 {object} map[string]string "Organization not found"
+// @Security BearerAuth
+// @Router /organizations/{id}/members [get]
 func (h *Handler) ListMembers(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	orgID := c.Param("id")
@@ -342,6 +398,20 @@ func (h *Handler) ListMembers(c *gin.Context) {
 }
 
 // AddMember adds a user to an organization (admin only)
+// @Summary Add organization member
+// @Description Add a user to an organization (requires admin role)
+// @Tags organizations
+// @Accept json
+// @Produce json
+// @Param id path string true "Organization ID"
+// @Param request body AddMemberRequest true "Member details"
+// @Success 201 {object} MemberResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 403 {object} map[string]string "Admin access required"
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 409 {object} map[string]string "User is already a member"
+// @Security BearerAuth
+// @Router /organizations/{id}/members [post]
 func (h *Handler) AddMember(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	orgID := c.Param("id")
@@ -394,6 +464,20 @@ func (h *Handler) AddMember(c *gin.Context) {
 }
 
 // UpdateMember updates a member's role (admin only)
+// @Summary Update organization member
+// @Description Update a member's role in an organization (requires admin role)
+// @Tags organizations
+// @Accept json
+// @Produce json
+// @Param id path string true "Organization ID"
+// @Param userId path string true "User ID"
+// @Param request body UpdateMemberRequest true "Updated member details"
+// @Success 200 {object} MemberResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 403 {object} map[string]string "Admin access required"
+// @Failure 404 {object} map[string]string "Member not found"
+// @Security BearerAuth
+// @Router /organizations/{id}/members/{userId} [put]
 func (h *Handler) UpdateMember(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	orgID := c.Param("id")
@@ -450,6 +534,17 @@ func (h *Handler) UpdateMember(c *gin.Context) {
 }
 
 // RemoveMember removes a member from an organization (admin only)
+// @Summary Remove organization member
+// @Description Remove a member from an organization (requires admin role)
+// @Tags organizations
+// @Produce json
+// @Param id path string true "Organization ID"
+// @Param userId path string true "User ID"
+// @Success 200 {object} map[string]string "Member removed"
+// @Failure 403 {object} map[string]string "Admin access required"
+// @Failure 404 {object} map[string]string "Member not found"
+// @Security BearerAuth
+// @Router /organizations/{id}/members/{userId} [delete]
 func (h *Handler) RemoveMember(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	orgID := c.Param("id")

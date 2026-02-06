@@ -1,5 +1,9 @@
 # Claude Code Instructions
 
+## Constraints
+
+- **Never use `sudo`** - all commands must run as the current user
+
 ## Git Workflow
 
 - Always use feature branches for changes (e.g., `feature/description`)

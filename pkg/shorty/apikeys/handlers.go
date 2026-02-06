@@ -70,6 +70,15 @@ func hashAPIKey(key string) string {
 }
 
 // Create creates a new API key for the authenticated user
+// @Summary Create an API key
+// @Description Create a new API key for the authenticated user
+// @Tags api-keys
+// @Accept json
+// @Produce json
+// @Param request body CreateAPIKeyRequest true "API key details"
+// @Success 201 {object} CreateAPIKeyResponse
+// @Security BearerAuth
+// @Router /api-keys [post]
 func (h *Handler) Create(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 
@@ -111,6 +120,13 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 // List returns all API keys for the authenticated user
+// @Summary List API keys
+// @Description Get all API keys for the authenticated user
+// @Tags api-keys
+// @Produce json
+// @Success 200 {array} APIKeyResponse
+// @Security BearerAuth
+// @Router /api-keys [get]
 func (h *Handler) List(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 
@@ -135,6 +151,15 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // Delete deletes an API key
+// @Summary Delete an API key
+// @Description Delete an API key by ID
+// @Tags api-keys
+// @Produce json
+// @Param id path string true "API Key ID"
+// @Success 200 {object} map[string]string "API key deleted"
+// @Failure 404 {object} map[string]string "API key not found"
+// @Security BearerAuth
+// @Router /api-keys/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	keyID := c.Param("id")

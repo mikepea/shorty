@@ -1,0 +1,1702 @@
+openapi: 3.0.0
+info:
+  contact:
+    name: Shorty Support
+    url: https://github.com/mikepea/shorty
+  description: A modern URL shortener with team collaboration, SSO, and SCIM support.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: Shorty API
+  version: "1.0"
+paths:
+  /api-keys:
+    get:
+      description: Get all API keys for the authenticated user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/apikeys.APIKeyResponse"
+                type: array
+      security:
+        - BearerAuth: []
+      summary: List API keys
+      tags:
+        - api-keys
+    post:
+      description: Create a new API key for the authenticated user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/apikeys.CreateAPIKeyRequest"
+        description: API key details
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/apikeys.CreateAPIKeyResponse"
+      security:
+        - BearerAuth: []
+      summary: Create an API key
+      tags:
+        - api-keys
+  "/api-keys/{id}":
+    delete:
+      description: Delete an API key by ID
+      parameters:
+        - description: API Key ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: API key deleted
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: API key not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Delete an API key
+      tags:
+        - api-keys
+  /auth/login:
+    post:
+      description: Authenticate with email and password to receive a JWT token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/auth.LoginRequest"
+        description: Login credentials
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/auth.AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      summary: Login
+      tags:
+        - auth
+  /auth/logout:
+    post:
+      description: Logout the current user (client-side token invalidation)
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      summary: Logout
+      tags:
+        - auth
+  /auth/me:
+    get:
+      description: Get the authenticated user's profile
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/auth.UserResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Get current user
+      tags:
+        - auth
+  /auth/password:
+    put:
+      description: Change the password for the authenticated user (requires existing
+        password)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/auth.ChangePasswordRequest"
+        description: Password change details
+        required: true
+      responses:
+        "200":
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "400":
+          description: Validation error or SSO-only user
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "401":
+          description: Authentication required or wrong current password
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Change password
+      tags:
+        - auth
+  /auth/register:
+    post:
+      description: Create a new user account and receive a JWT token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/auth.RegisterRequest"
+        description: Registration details
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/auth.AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      summary: Register a new user
+      tags:
+        - auth
+  /groups:
+    get:
+      description: Get all groups the current user is a member of
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/groups.GroupResponse"
+                type: array
+      security:
+        - BearerAuth: []
+      summary: List groups
+      tags:
+        - groups
+    post:
+      description: Create a new group with the current user as admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/groups.CreateGroupRequest"
+        description: Group details
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/groups.GroupResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Create a group
+      tags:
+        - groups
+  "/groups/{id}":
+    delete:
+      description: Delete a group (requires admin role in group)
+      parameters:
+        - description: Group ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Group deleted
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Delete a group
+      tags:
+        - groups
+    get:
+      description: Get details of a specific group
+      parameters:
+        - description: Group ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/groups.GroupResponse"
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Get a group
+      tags:
+        - groups
+    put:
+      description: Update a group (requires admin role in group)
+      parameters:
+        - description: Group ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/groups.UpdateGroupRequest"
+        description: Updated group details
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/groups.GroupResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Update a group
+      tags:
+        - groups
+  "/groups/{id}/links":
+    get:
+      description: Get all links belonging to a specific group
+      parameters:
+        - description: Group ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: Filter by unread status
+          in: query
+          name: is_unread
+          schema:
+            type: boolean
+        - description: Filter by public status
+          in: query
+          name: is_public
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/links.LinkResponse"
+                type: array
+        "400":
+          description: Invalid group ID
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: List links in a group
+      tags:
+        - links
+    post:
+      description: Create a new shortened link in a group
+      parameters:
+        - description: Group ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/links.CreateLinkRequest"
+        description: Link details
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/links.LinkResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Create a link
+      tags:
+        - links
+  "/groups/{id}/members":
+    get:
+      description: Get all members of a group
+      parameters:
+        - description: Group ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/groups.MemberResponse"
+                type: array
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: List group members
+      tags:
+        - groups
+    post:
+      description: Add a user to a group (requires admin role)
+      parameters:
+        - description: Group ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/groups.AddMemberRequest"
+        description: Member details
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/groups.MemberResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "409":
+          description: User is already a member
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Add group member
+      tags:
+        - groups
+  "/groups/{id}/members/{userId}":
+    delete:
+      description: Remove a member from a group (requires admin role)
+      parameters:
+        - description: Group ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Remove group member
+      tags:
+        - groups
+    put:
+      description: Update a member's role in a group (requires admin role)
+      parameters:
+        - description: Group ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/groups.UpdateMemberRequest"
+        description: Updated member details
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/groups.MemberResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Update group member
+      tags:
+        - groups
+  "/groups/{id}/tags":
+    get:
+      description: Get all tags used in a specific group
+      parameters:
+        - description: Group ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/tags.TagResponse"
+                type: array
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: List tags in a group
+      tags:
+        - tags
+  /links:
+    get:
+      description: Search links across all groups the user has access to
+      parameters:
+        - description: Search query (searches title, description, URL)
+          in: query
+          name: q
+          schema:
+            type: string
+        - description: Filter by unread status
+          in: query
+          name: is_unread
+          schema:
+            type: boolean
+        - description: Filter by public status
+          in: query
+          name: is_public
+          schema:
+            type: boolean
+        - description: Filter by group ID
+          in: query
+          name: group_id
+          schema:
+            type: string
+        - description: Filter by tag name
+          in: query
+          name: tag
+          schema:
+            type: string
+        - description: Max results (default 50, max 100)
+          in: query
+          name: limit
+          schema:
+            type: integer
+        - description: Offset for pagination
+          in: query
+          name: offset
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/links.LinkResponse"
+                type: array
+      security:
+        - BearerAuth: []
+      summary: Search links
+      tags:
+        - links
+  "/links/{slug}":
+    delete:
+      description: Delete a link by slug
+      parameters:
+        - description: Link slug
+          in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Link deleted
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Delete a link
+      tags:
+        - links
+    get:
+      description: Get link details by its short slug
+      parameters:
+        - description: Link slug
+          in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/links.LinkResponse"
+        "404":
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Get a link by slug
+      tags:
+        - links
+    put:
+      description: Update an existing link by slug
+      parameters:
+        - description: Link slug
+          in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/links.UpdateLinkRequest"
+        description: Updated link details
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/links.LinkResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Update a link
+      tags:
+        - links
+  "/links/{slug}/tags":
+    get:
+      description: Get all tags for a specific link
+      parameters:
+        - description: Link slug
+          in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/tags.TagResponse"
+                type: array
+        "404":
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Get link tags
+      tags:
+        - tags
+    put:
+      description: Replace all tags on a link
+      parameters:
+        - description: Link slug
+          in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/tags.SetTagsRequest"
+        description: Tags to set
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/tags.TagResponse"
+                type: array
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Set link tags
+      tags:
+        - tags
+  "/links/{slug}/tags/{tag}":
+    delete:
+      description: Remove a tag from a link
+      parameters:
+        - description: Link slug
+          in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+        - description: Tag name
+          in: path
+          name: tag
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tag removed
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: Link or tag not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Remove tag from link
+      tags:
+        - tags
+    post:
+      description: Add a single tag to a link
+      parameters:
+        - description: Link slug
+          in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+        - description: Tag name
+          in: path
+          name: tag
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/tags.TagResponse"
+        "404":
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Add tag to link
+      tags:
+        - tags
+  /organizations:
+    get:
+      description: Get all organizations the current user is a member of
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/organizations.OrgResponse"
+                type: array
+      security:
+        - BearerAuth: []
+      summary: List organizations
+      tags:
+        - organizations
+    post:
+      description: Create a new organization with the current user as admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/organizations.CreateOrgRequest"
+        description: Organization details
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/organizations.OrgResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Create an organization
+      tags:
+        - organizations
+  "/organizations/{id}":
+    delete:
+      description: Delete an organization (requires admin role)
+      parameters:
+        - description: Organization ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Organization deleted
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Delete an organization
+      tags:
+        - organizations
+    get:
+      description: Get details of a specific organization
+      parameters:
+        - description: Organization ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/organizations.OrgResponse"
+        "404":
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Get an organization
+      tags:
+        - organizations
+    put:
+      description: Update an organization (requires admin role)
+      parameters:
+        - description: Organization ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/organizations.UpdateOrgRequest"
+        description: Updated organization details
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/organizations.OrgResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Update an organization
+      tags:
+        - organizations
+  "/organizations/{id}/members":
+    get:
+      description: Get all members of an organization
+      parameters:
+        - description: Organization ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/organizations.MemberResponse"
+                type: array
+        "404":
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: List organization members
+      tags:
+        - organizations
+    post:
+      description: Add a user to an organization (requires admin role)
+      parameters:
+        - description: Organization ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/organizations.AddMemberRequest"
+        description: Member details
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/organizations.MemberResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "409":
+          description: User is already a member
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Add organization member
+      tags:
+        - organizations
+  "/organizations/{id}/members/{userId}":
+    delete:
+      description: Remove a member from an organization (requires admin role)
+      parameters:
+        - description: Organization ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Remove organization member
+      tags:
+        - organizations
+    put:
+      description: Update a member's role in an organization (requires admin role)
+      parameters:
+        - description: Organization ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: User ID
+          in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/organizations.UpdateMemberRequest"
+        description: Updated member details
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/organizations.MemberResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+      security:
+        - BearerAuth: []
+      summary: Update organization member
+      tags:
+        - organizations
+  /tags:
+    get:
+      description: Get all tags used across the user's groups
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/tags.TagResponse"
+                type: array
+      security:
+        - BearerAuth: []
+      summary: List tags
+      tags:
+        - tags
+servers:
+  - url: //localhost:8080/api
+components:
+  securitySchemes:
+    BearerAuth:
+      description: 'JWT token or API key. Format: "Bearer {token}"'
+      in: header
+      name: Authorization
+      type: apiKey
+    SCIMAuth:
+      description: 'SCIM bearer token. Format: "Bearer {scim_token}"'
+      in: header
+      name: Authorization
+      type: apiKey
+  schemas:
+    apikeys.APIKeyResponse:
+      properties:
+        created_at:
+          type: string
+        description:
+          type: string
+        id:
+          type: string
+        key_prefix:
+          type: string
+        last_used_at:
+          type: string
+      type: object
+    apikeys.CreateAPIKeyRequest:
+      properties:
+        description:
+          type: string
+      type: object
+    apikeys.CreateAPIKeyResponse:
+      properties:
+        created_at:
+          type: string
+        description:
+          type: string
+        id:
+          type: string
+        key:
+          type: string
+        key_prefix:
+          type: string
+      type: object
+    auth.AuthResponse:
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/auth.UserResponse"
+      type: object
+    auth.ChangePasswordRequest:
+      properties:
+        current_password:
+          type: string
+        new_password:
+          minLength: 8
+          type: string
+      required:
+        - current_password
+        - new_password
+      type: object
+    auth.LoginRequest:
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+      type: object
+    auth.RegisterRequest:
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        password:
+          minLength: 8
+          type: string
+      required:
+        - email
+        - name
+        - password
+      type: object
+    auth.UserResponse:
+      properties:
+        email:
+          type: string
+        has_password:
+          type: boolean
+        id:
+          type: string
+        name:
+          type: string
+        system_role:
+          type: string
+      type: object
+    groups.AddMemberRequest:
+      properties:
+        email:
+          type: string
+        role:
+          enum:
+            - admin
+            - member
+          type: string
+      required:
+        - email
+        - role
+      type: object
+    groups.CreateGroupRequest:
+      properties:
+        description:
+          type: string
+        name:
+          type: string
+        organization_id:
+          description: Optional - defaults to org from context or global
+          type: string
+      required:
+        - name
+      type: object
+    groups.GroupResponse:
+      properties:
+        description:
+          type: string
+        id:
+          type: string
+        member_count:
+          type: integer
+        name:
+          type: string
+        role:
+          description: User's role in this group
+          type: string
+      type: object
+    groups.MemberResponse:
+      properties:
+        email:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+      type: object
+    groups.UpdateGroupRequest:
+      properties:
+        description:
+          type: string
+        name:
+          type: string
+      type: object
+    groups.UpdateMemberRequest:
+      properties:
+        role:
+          enum:
+            - admin
+            - member
+          type: string
+      required:
+        - role
+      type: object
+    links.CreateLinkRequest:
+      properties:
+        description:
+          type: string
+        is_public:
+          type: boolean
+        is_unread:
+          type: boolean
+        slug:
+          maxLength: 50
+          minLength: 1
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+      required:
+        - url
+      type: object
+    links.LinkResponse:
+      properties:
+        click_count:
+          type: integer
+        created_at:
+          type: string
+        description:
+          type: string
+        group_id:
+          type: string
+        id:
+          type: string
+        is_public:
+          type: boolean
+        is_unread:
+          type: boolean
+        slug:
+          type: string
+        title:
+          type: string
+        updated_at:
+          type: string
+        url:
+          type: string
+      type: object
+    links.UpdateLinkRequest:
+      properties:
+        description:
+          type: string
+        is_public:
+          type: boolean
+        is_unread:
+          type: boolean
+        slug:
+          maxLength: 50
+          minLength: 1
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+      type: object
+    organizations.AddMemberRequest:
+      properties:
+        email:
+          type: string
+        role:
+          enum:
+            - admin
+            - member
+          type: string
+      required:
+        - email
+        - role
+      type: object
+    organizations.CreateOrgRequest:
+      properties:
+        name:
+          maxLength: 100
+          minLength: 1
+          type: string
+        slug:
+          maxLength: 50
+          minLength: 1
+          type: string
+      required:
+        - name
+        - slug
+      type: object
+    organizations.MemberResponse:
+      properties:
+        created_at:
+          type: string
+        email:
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        user_id:
+          type: string
+      type: object
+    organizations.OrgResponse:
+      properties:
+        created_at:
+          type: string
+        id:
+          type: string
+        is_global:
+          type: boolean
+        member_count:
+          type: integer
+        name:
+          type: string
+        role:
+          type: string
+        slug:
+          type: string
+      type: object
+    organizations.UpdateMemberRequest:
+      properties:
+        role:
+          enum:
+            - admin
+            - member
+          type: string
+      required:
+        - role
+      type: object
+    organizations.UpdateOrgRequest:
+      properties:
+        name:
+          maxLength: 100
+          minLength: 1
+          type: string
+      type: object
+    tags.SetTagsRequest:
+      properties:
+        tags:
+          items:
+            type: string
+          type: array
+      required:
+        - tags
+      type: object
+    tags.TagResponse:
+      properties:
+        id:
+          type: string
+        link_count:
+          type: integer
+        name:
+          type: string
+      type: object

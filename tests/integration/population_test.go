@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -11,8 +13,17 @@ import (
 type userClient struct {
 	email  string
 	name   string
-	client *client.Client
+	client *client.ClientWithResponses
+	token  string
 	userID string
+}
+
+// withAuth returns a request editor that adds the auth token.
+func (u *userClient) withAuth() client.RequestEditorFn {
+	return func(ctx context.Context, req *http.Request) error {
+		req.Header.Set("Authorization", "Bearer "+u.token)
+		return nil
+	}
 }
 
 // TestPopulateDatabase creates a realistic set of data across 3 organizations.
@@ -23,134 +34,142 @@ func TestPopulateDatabase(t *testing.T) {
 	server := httptest.NewServer(router)
 	defer server.Close()
 
+	ctx := context.Background()
+
 	// Create clients and register all 10 users
+	// The generated client expects the /api prefix in the base URL
+	apiURL := server.URL + "/api"
 	users := make(map[string]*userClient)
 
 	// Acme Engineering users
-	users["alice"] = registerUser(t, server.URL, "alice@acme.example.com", "Alice Admin", server)
-	users["bob"] = registerUser(t, server.URL, "bob@acme.example.com", "Bob Backend", server)
-	users["carol"] = registerUser(t, server.URL, "carol@acme.example.com", "Carol Coder", server)
-	users["dave"] = registerUser(t, server.URL, "dave@acme.example.com", "Dave DevOps", server)
+	users["alice"] = registerUser(t, ctx, apiURL, "alice@acme.example.com", "Alice Admin")
+	users["bob"] = registerUser(t, ctx, apiURL, "bob@acme.example.com", "Bob Backend")
+	users["carol"] = registerUser(t, ctx, apiURL, "carol@acme.example.com", "Carol Coder")
+	users["dave"] = registerUser(t, ctx, apiURL, "dave@acme.example.com", "Dave DevOps")
 
 	// Greenfield Marketing users
-	users["emma"] = registerUser(t, server.URL, "emma@greenfield.example.com", "Emma Executive", server)
-	users["frank"] = registerUser(t, server.URL, "frank@greenfield.example.com", "Frank Frontend", server)
-	users["grace"] = registerUser(t, server.URL, "grace@greenfield.example.com", "Grace Growth", server)
+	users["emma"] = registerUser(t, ctx, apiURL, "emma@greenfield.example.com", "Emma Executive")
+	users["frank"] = registerUser(t, ctx, apiURL, "frank@greenfield.example.com", "Frank Frontend")
+	users["grace"] = registerUser(t, ctx, apiURL, "grace@greenfield.example.com", "Grace Growth")
 
 	// Oakwood Research Lab users
-	users["henry"] = registerUser(t, server.URL, "henry@oakwood.example.com", "Henry Head", server)
-	users["iris"] = registerUser(t, server.URL, "iris@oakwood.example.com", "Iris Intern", server)
-	users["jack"] = registerUser(t, server.URL, "jack@oakwood.example.com", "Jack Junior", server)
+	users["henry"] = registerUser(t, ctx, apiURL, "henry@oakwood.example.com", "Henry Head")
+	users["iris"] = registerUser(t, ctx, apiURL, "iris@oakwood.example.com", "Iris Intern")
+	users["jack"] = registerUser(t, ctx, apiURL, "jack@oakwood.example.com", "Jack Junior")
 
 	// Create 3 organizations (admins create them)
-	acmeOrg := createOrg(t, users["alice"].client, "Acme Engineering", "acme-eng")
-	greenfieldOrg := createOrg(t, users["emma"].client, "Greenfield Marketing", "greenfield-mkt")
-	oakwoodOrg := createOrg(t, users["henry"].client, "Oakwood Research Lab", "oakwood-lab")
+	acmeOrg := createOrg(t, ctx, users["alice"], "Acme Engineering", "acme-eng")
+	greenfieldOrg := createOrg(t, ctx, users["emma"], "Greenfield Marketing", "greenfield-mkt")
+	oakwoodOrg := createOrg(t, ctx, users["henry"], "Oakwood Research Lab", "oakwood-lab")
 
 	// Add members to Acme (Alice is already admin)
-	addOrgMember(t, users["alice"].client, acmeOrg.ID, "bob@acme.example.com", "member")
-	addOrgMember(t, users["alice"].client, acmeOrg.ID, "carol@acme.example.com", "member")
-	addOrgMember(t, users["alice"].client, acmeOrg.ID, "dave@acme.example.com", "member")
+	addOrgMember(t, ctx, users["alice"], *acmeOrg.Id, "bob@acme.example.com", "member")
+	addOrgMember(t, ctx, users["alice"], *acmeOrg.Id, "carol@acme.example.com", "member")
+	addOrgMember(t, ctx, users["alice"], *acmeOrg.Id, "dave@acme.example.com", "member")
 
 	// Add members to Greenfield (Emma is already admin)
-	addOrgMember(t, users["emma"].client, greenfieldOrg.ID, "frank@greenfield.example.com", "member")
-	addOrgMember(t, users["emma"].client, greenfieldOrg.ID, "grace@greenfield.example.com", "member")
+	addOrgMember(t, ctx, users["emma"], *greenfieldOrg.Id, "frank@greenfield.example.com", "member")
+	addOrgMember(t, ctx, users["emma"], *greenfieldOrg.Id, "grace@greenfield.example.com", "member")
 
 	// Add members to Oakwood (Henry is already admin)
-	addOrgMember(t, users["henry"].client, oakwoodOrg.ID, "iris@oakwood.example.com", "member")
-	addOrgMember(t, users["henry"].client, oakwoodOrg.ID, "jack@oakwood.example.com", "member")
+	addOrgMember(t, ctx, users["henry"], *oakwoodOrg.Id, "iris@oakwood.example.com", "member")
+	addOrgMember(t, ctx, users["henry"], *oakwoodOrg.Id, "jack@oakwood.example.com", "member")
 
 	// Create groups for Acme (3 groups)
-	backendGroup := createGroup(t, users["alice"].client, "Backend Team", "Go and API development", acmeOrg.ID)
-	frontendGroup := createGroup(t, users["alice"].client, "Frontend Team", "React and UI development", acmeOrg.ID)
-	devopsGroup := createGroup(t, users["alice"].client, "DevOps", "Infrastructure and deployment", acmeOrg.ID)
+	backendGroup := createGroup(t, ctx, users["alice"], "Backend Team", "Go and API development", *acmeOrg.Id)
+	frontendGroup := createGroup(t, ctx, users["alice"], "Frontend Team", "React and UI development", *acmeOrg.Id)
+	devopsGroup := createGroup(t, ctx, users["alice"], "DevOps", "Infrastructure and deployment", *acmeOrg.Id)
 
 	// Add members to Acme groups
-	addGroupMember(t, users["alice"].client, backendGroup.ID, "bob@acme.example.com", "admin")
-	addGroupMember(t, users["alice"].client, backendGroup.ID, "carol@acme.example.com", "member")
-	addGroupMember(t, users["alice"].client, frontendGroup.ID, "carol@acme.example.com", "admin")
-	addGroupMember(t, users["alice"].client, frontendGroup.ID, "bob@acme.example.com", "member")
-	addGroupMember(t, users["alice"].client, devopsGroup.ID, "dave@acme.example.com", "admin")
-	addGroupMember(t, users["alice"].client, devopsGroup.ID, "bob@acme.example.com", "member")
+	addGroupMember(t, ctx, users["alice"], *backendGroup.Id, "bob@acme.example.com", "admin")
+	addGroupMember(t, ctx, users["alice"], *backendGroup.Id, "carol@acme.example.com", "member")
+	addGroupMember(t, ctx, users["alice"], *frontendGroup.Id, "carol@acme.example.com", "admin")
+	addGroupMember(t, ctx, users["alice"], *frontendGroup.Id, "bob@acme.example.com", "member")
+	addGroupMember(t, ctx, users["alice"], *devopsGroup.Id, "dave@acme.example.com", "admin")
+	addGroupMember(t, ctx, users["alice"], *devopsGroup.Id, "bob@acme.example.com", "member")
 
 	// Create groups for Greenfield (2 groups)
-	campaignsGroup := createGroup(t, users["emma"].client, "Campaigns", "Marketing campaigns and content", greenfieldOrg.ID)
-	analyticsGroup := createGroup(t, users["emma"].client, "Analytics & SEO", "Data analysis and SEO tools", greenfieldOrg.ID)
+	campaignsGroup := createGroup(t, ctx, users["emma"], "Campaigns", "Marketing campaigns and content", *greenfieldOrg.Id)
+	analyticsGroup := createGroup(t, ctx, users["emma"], "Analytics & SEO", "Data analysis and SEO tools", *greenfieldOrg.Id)
 
 	// Add members to Greenfield groups
-	addGroupMember(t, users["emma"].client, campaignsGroup.ID, "frank@greenfield.example.com", "member")
-	addGroupMember(t, users["emma"].client, campaignsGroup.ID, "grace@greenfield.example.com", "member")
-	addGroupMember(t, users["emma"].client, analyticsGroup.ID, "grace@greenfield.example.com", "admin")
-	addGroupMember(t, users["emma"].client, analyticsGroup.ID, "frank@greenfield.example.com", "member")
+	addGroupMember(t, ctx, users["emma"], *campaignsGroup.Id, "frank@greenfield.example.com", "member")
+	addGroupMember(t, ctx, users["emma"], *campaignsGroup.Id, "grace@greenfield.example.com", "member")
+	addGroupMember(t, ctx, users["emma"], *analyticsGroup.Id, "grace@greenfield.example.com", "admin")
+	addGroupMember(t, ctx, users["emma"], *analyticsGroup.Id, "frank@greenfield.example.com", "member")
 
 	// Create groups for Oakwood (2 groups)
-	mlGroup := createGroup(t, users["henry"].client, "Machine Learning", "ML research and experiments", oakwoodOrg.ID)
-	pubsGroup := createGroup(t, users["henry"].client, "Publications", "Papers and documentation", oakwoodOrg.ID)
+	mlGroup := createGroup(t, ctx, users["henry"], "Machine Learning", "ML research and experiments", *oakwoodOrg.Id)
+	pubsGroup := createGroup(t, ctx, users["henry"], "Publications", "Papers and documentation", *oakwoodOrg.Id)
 
 	// Add members to Oakwood groups
-	addGroupMember(t, users["henry"].client, mlGroup.ID, "iris@oakwood.example.com", "member")
-	addGroupMember(t, users["henry"].client, mlGroup.ID, "jack@oakwood.example.com", "member")
-	addGroupMember(t, users["henry"].client, pubsGroup.ID, "iris@oakwood.example.com", "admin")
-	addGroupMember(t, users["henry"].client, pubsGroup.ID, "jack@oakwood.example.com", "member")
+	addGroupMember(t, ctx, users["henry"], *mlGroup.Id, "iris@oakwood.example.com", "member")
+	addGroupMember(t, ctx, users["henry"], *mlGroup.Id, "jack@oakwood.example.com", "member")
+	addGroupMember(t, ctx, users["henry"], *pubsGroup.Id, "iris@oakwood.example.com", "admin")
+	addGroupMember(t, ctx, users["henry"], *pubsGroup.Id, "jack@oakwood.example.com", "member")
 
 	// Create links for Backend Team (Bob is admin)
-	createLinkWithTags(t, users["bob"].client, backendGroup.ID, "https://go.dev/doc/", "go-docs", "Go Documentation", []string{"go", "documentation"})
-	createLinkWithTags(t, users["bob"].client, backendGroup.ID, "https://pkg.go.dev/", "go-pkg", "Go Packages", []string{"go", "packages"})
-	createLinkWithTags(t, users["bob"].client, backendGroup.ID, "https://gin-gonic.com/docs/", "gin-docs", "Gin Framework Docs", []string{"go", "gin", "api"})
-	createLinkWithTags(t, users["bob"].client, backendGroup.ID, "https://gorm.io/docs/", "gorm-docs", "GORM Documentation", []string{"go", "gorm", "database"})
-	createLinkWithTags(t, users["bob"].client, backendGroup.ID, "https://gobyexample.com/", "go-examples", "Go by Example", []string{"go", "tutorial"})
+	createLinkWithTags(t, ctx, users["bob"], *backendGroup.Id, "https://go.dev/doc/", "go-docs", "Go Documentation", []string{"go", "documentation"})
+	createLinkWithTags(t, ctx, users["bob"], *backendGroup.Id, "https://pkg.go.dev/", "go-pkg", "Go Packages", []string{"go", "packages"})
+	createLinkWithTags(t, ctx, users["bob"], *backendGroup.Id, "https://gin-gonic.com/docs/", "gin-docs", "Gin Framework Docs", []string{"go", "gin", "api"})
+	createLinkWithTags(t, ctx, users["bob"], *backendGroup.Id, "https://gorm.io/docs/", "gorm-docs", "GORM Documentation", []string{"go", "gorm", "database"})
+	createLinkWithTags(t, ctx, users["bob"], *backendGroup.Id, "https://gobyexample.com/", "go-examples", "Go by Example", []string{"go", "tutorial"})
 
 	// Create links for Frontend Team (Carol is admin)
-	createLinkWithTags(t, users["carol"].client, frontendGroup.ID, "https://react.dev/", "react-docs", "React Documentation", []string{"react", "documentation"})
-	createLinkWithTags(t, users["carol"].client, frontendGroup.ID, "https://vitejs.dev/guide/", "vite-docs", "Vite Guide", []string{"vite", "build-tool"})
-	createLinkWithTags(t, users["carol"].client, frontendGroup.ID, "https://tailwindcss.com/docs", "tailwind", "Tailwind CSS", []string{"css", "tailwind"})
-	createLinkWithTags(t, users["carol"].client, frontendGroup.ID, "https://tanstack.com/query/latest", "tanstack-query", "TanStack Query", []string{"react", "state-management"})
-	createLinkWithTags(t, users["carol"].client, frontendGroup.ID, "https://www.typescriptlang.org/docs/", "ts-docs", "TypeScript Docs", []string{"typescript", "documentation"})
+	createLinkWithTags(t, ctx, users["carol"], *frontendGroup.Id, "https://react.dev/", "react-docs", "React Documentation", []string{"react", "documentation"})
+	createLinkWithTags(t, ctx, users["carol"], *frontendGroup.Id, "https://vitejs.dev/guide/", "vite-docs", "Vite Guide", []string{"vite", "build-tool"})
+	createLinkWithTags(t, ctx, users["carol"], *frontendGroup.Id, "https://tailwindcss.com/docs", "tailwind", "Tailwind CSS", []string{"css", "tailwind"})
+	createLinkWithTags(t, ctx, users["carol"], *frontendGroup.Id, "https://tanstack.com/query/latest", "tanstack-query", "TanStack Query", []string{"react", "state-management"})
+	createLinkWithTags(t, ctx, users["carol"], *frontendGroup.Id, "https://www.typescriptlang.org/docs/", "ts-docs", "TypeScript Docs", []string{"typescript", "documentation"})
 
 	// Create links for DevOps (Dave is admin)
-	createLinkWithTags(t, users["dave"].client, devopsGroup.ID, "https://docs.docker.com/", "docker-docs", "Docker Documentation", []string{"docker", "containers"})
-	createLinkWithTags(t, users["dave"].client, devopsGroup.ID, "https://kubernetes.io/docs/", "k8s-docs", "Kubernetes Documentation", []string{"kubernetes", "orchestration"})
-	createLinkWithTags(t, users["dave"].client, devopsGroup.ID, "https://docs.github.com/en/actions", "gh-actions", "GitHub Actions", []string{"ci-cd", "automation"})
-	createLinkWithTags(t, users["dave"].client, devopsGroup.ID, "https://prometheus.io/docs/", "prometheus", "Prometheus Monitoring", []string{"monitoring", "metrics"})
+	createLinkWithTags(t, ctx, users["dave"], *devopsGroup.Id, "https://docs.docker.com/", "docker-docs", "Docker Documentation", []string{"docker", "containers"})
+	createLinkWithTags(t, ctx, users["dave"], *devopsGroup.Id, "https://kubernetes.io/docs/", "k8s-docs", "Kubernetes Documentation", []string{"kubernetes", "orchestration"})
+	createLinkWithTags(t, ctx, users["dave"], *devopsGroup.Id, "https://docs.github.com/en/actions", "gh-actions", "GitHub Actions", []string{"ci-cd", "automation"})
+	createLinkWithTags(t, ctx, users["dave"], *devopsGroup.Id, "https://prometheus.io/docs/", "prometheus", "Prometheus Monitoring", []string{"monitoring", "metrics"})
 
 	// Create links for Campaigns (Emma is admin)
-	createLinkWithTags(t, users["emma"].client, campaignsGroup.ID, "https://mailchimp.com/resources/", "mailchimp", "Mailchimp Resources", []string{"email", "marketing"})
-	createLinkWithTags(t, users["emma"].client, campaignsGroup.ID, "https://buffer.com/library/", "buffer", "Buffer Blog", []string{"social-media", "marketing"})
-	createLinkWithTags(t, users["emma"].client, campaignsGroup.ID, "https://www.canva.com/designschool/", "canva", "Canva Design School", []string{"design", "graphics"})
-	createLinkWithTags(t, users["emma"].client, campaignsGroup.ID, "https://copyblogger.com/", "copyblogger", "Copyblogger", []string{"content", "writing"})
+	createLinkWithTags(t, ctx, users["emma"], *campaignsGroup.Id, "https://mailchimp.com/resources/", "mailchimp", "Mailchimp Resources", []string{"email", "marketing"})
+	createLinkWithTags(t, ctx, users["emma"], *campaignsGroup.Id, "https://buffer.com/library/", "buffer", "Buffer Blog", []string{"social-media", "marketing"})
+	createLinkWithTags(t, ctx, users["emma"], *campaignsGroup.Id, "https://www.canva.com/designschool/", "canva", "Canva Design School", []string{"design", "graphics"})
+	createLinkWithTags(t, ctx, users["emma"], *campaignsGroup.Id, "https://copyblogger.com/", "copyblogger", "Copyblogger", []string{"content", "writing"})
 
 	// Create links for Analytics & SEO (Grace is admin)
-	createLinkWithTags(t, users["grace"].client, analyticsGroup.ID, "https://analytics.google.com/", "ga4", "Google Analytics 4", []string{"analytics", "seo"})
-	createLinkWithTags(t, users["grace"].client, analyticsGroup.ID, "https://ahrefs.com/blog/", "ahrefs", "Ahrefs Blog", []string{"seo", "backlinks"})
-	createLinkWithTags(t, users["grace"].client, analyticsGroup.ID, "https://moz.com/learn/seo", "moz", "Moz SEO Guide", []string{"seo", "learning"})
-	createLinkWithTags(t, users["grace"].client, analyticsGroup.ID, "https://search.google.com/search-console", "gsc", "Google Search Console", []string{"seo", "google"})
+	createLinkWithTags(t, ctx, users["grace"], *analyticsGroup.Id, "https://analytics.google.com/", "ga4", "Google Analytics 4", []string{"analytics", "seo"})
+	createLinkWithTags(t, ctx, users["grace"], *analyticsGroup.Id, "https://ahrefs.com/blog/", "ahrefs", "Ahrefs Blog", []string{"seo", "backlinks"})
+	createLinkWithTags(t, ctx, users["grace"], *analyticsGroup.Id, "https://moz.com/learn/seo", "moz", "Moz SEO Guide", []string{"seo", "learning"})
+	createLinkWithTags(t, ctx, users["grace"], *analyticsGroup.Id, "https://search.google.com/search-console", "gsc", "Google Search Console", []string{"seo", "google"})
 
 	// Create links for Machine Learning (Henry is admin)
-	createLinkWithTags(t, users["henry"].client, mlGroup.ID, "https://pytorch.org/docs/", "pytorch", "PyTorch Documentation", []string{"ml", "pytorch"})
-	createLinkWithTags(t, users["henry"].client, mlGroup.ID, "https://www.tensorflow.org/tutorials", "tensorflow", "TensorFlow Tutorials", []string{"ml", "tensorflow"})
-	createLinkWithTags(t, users["henry"].client, mlGroup.ID, "https://scikit-learn.org/stable/", "sklearn", "Scikit-learn", []string{"ml", "python"})
-	createLinkWithTags(t, users["henry"].client, mlGroup.ID, "https://huggingface.co/docs", "hf-docs", "Hugging Face Docs", []string{"ml", "nlp", "transformers"})
-	createLinkWithTags(t, users["henry"].client, mlGroup.ID, "https://arxiv.org/list/cs.LG/recent", "arxiv-ml", "ArXiv ML Papers", []string{"ml", "papers", "research"})
+	createLinkWithTags(t, ctx, users["henry"], *mlGroup.Id, "https://pytorch.org/docs/", "pytorch", "PyTorch Documentation", []string{"ml", "pytorch"})
+	createLinkWithTags(t, ctx, users["henry"], *mlGroup.Id, "https://www.tensorflow.org/tutorials", "tensorflow", "TensorFlow Tutorials", []string{"ml", "tensorflow"})
+	createLinkWithTags(t, ctx, users["henry"], *mlGroup.Id, "https://scikit-learn.org/stable/", "sklearn", "Scikit-learn", []string{"ml", "python"})
+	createLinkWithTags(t, ctx, users["henry"], *mlGroup.Id, "https://huggingface.co/docs", "hf-docs", "Hugging Face Docs", []string{"ml", "nlp", "transformers"})
+	createLinkWithTags(t, ctx, users["henry"], *mlGroup.Id, "https://arxiv.org/list/cs.LG/recent", "arxiv-ml", "ArXiv ML Papers", []string{"ml", "papers", "research"})
 
 	// Create links for Publications (Iris is admin)
-	createLinkWithTags(t, users["iris"].client, pubsGroup.ID, "https://scholar.google.com/", "scholar", "Google Scholar", []string{"research", "papers"})
-	createLinkWithTags(t, users["iris"].client, pubsGroup.ID, "https://www.overleaf.com/", "overleaf", "Overleaf", []string{"latex", "writing"})
-	createLinkWithTags(t, users["iris"].client, pubsGroup.ID, "https://www.zotero.org/", "zotero", "Zotero", []string{"citations", "research"})
-	createLinkWithTags(t, users["iris"].client, pubsGroup.ID, "https://www.grammarly.com/", "grammarly", "Grammarly", []string{"writing", "tools"})
+	createLinkWithTags(t, ctx, users["iris"], *pubsGroup.Id, "https://scholar.google.com/", "scholar", "Google Scholar", []string{"research", "papers"})
+	createLinkWithTags(t, ctx, users["iris"], *pubsGroup.Id, "https://www.overleaf.com/", "overleaf", "Overleaf", []string{"latex", "writing"})
+	createLinkWithTags(t, ctx, users["iris"], *pubsGroup.Id, "https://www.zotero.org/", "zotero", "Zotero", []string{"citations", "research"})
+	createLinkWithTags(t, ctx, users["iris"], *pubsGroup.Id, "https://www.grammarly.com/", "grammarly", "Grammarly", []string{"writing", "tools"})
 
 	// Verification tests
 	t.Run("verify org listing", func(t *testing.T) {
 		// Alice should see Acme org
-		orgs, err := users["alice"].client.ListOrganizations()
+		resp, err := users["alice"].client.GetOrganizationsWithResponse(ctx, users["alice"].withAuth())
 		if err != nil {
 			t.Fatalf("Failed to list organizations: %v", err)
 		}
+		if resp.StatusCode() != http.StatusOK {
+			t.Fatalf("Expected 200, got %d", resp.StatusCode())
+		}
+		orgs := *resp.JSON200
 		found := false
 		for _, org := range orgs {
-			if org.Slug == "acme-eng" {
+			if org.Slug != nil && *org.Slug == "acme-eng" {
 				found = true
-				if org.MemberCount != 4 {
-					t.Errorf("Expected 4 members in Acme, got %d", org.MemberCount)
+				if org.MemberCount != nil && *org.MemberCount != 4 {
+					t.Errorf("Expected 4 members in Acme, got %d", *org.MemberCount)
 				}
 			}
 		}
@@ -159,12 +178,12 @@ func TestPopulateDatabase(t *testing.T) {
 		}
 
 		// Bob should not be able to see Greenfield
-		orgs, err = users["bob"].client.ListOrganizations()
+		resp, err = users["bob"].client.GetOrganizationsWithResponse(ctx, users["bob"].withAuth())
 		if err != nil {
 			t.Fatalf("Failed to list organizations: %v", err)
 		}
-		for _, org := range orgs {
-			if org.Slug == "greenfield-mkt" {
+		for _, org := range *resp.JSON200 {
+			if org.Slug != nil && *org.Slug == "greenfield-mkt" {
 				t.Error("Bob should not see greenfield-mkt organization")
 			}
 		}
@@ -172,16 +191,20 @@ func TestPopulateDatabase(t *testing.T) {
 
 	t.Run("verify group listing", func(t *testing.T) {
 		// Bob should see Backend and DevOps but also Frontend (he was added to all)
-		groups, err := users["bob"].client.ListGroups()
+		resp, err := users["bob"].client.GetGroupsWithResponse(ctx, users["bob"].withAuth())
 		if err != nil {
 			t.Fatalf("Failed to list groups: %v", err)
 		}
+		if resp.StatusCode() != http.StatusOK {
+			t.Fatalf("Expected 200, got %d", resp.StatusCode())
+		}
+		groups := *resp.JSON200
 		backendFound := false
 		for _, g := range groups {
-			if g.Name == "Backend Team" {
+			if g.Name != nil && *g.Name == "Backend Team" {
 				backendFound = true
-				if g.Role != "admin" {
-					t.Errorf("Bob should be admin of Backend Team, got %s", g.Role)
+				if g.Role != nil && *g.Role != "admin" {
+					t.Errorf("Bob should be admin of Backend Team, got %s", *g.Role)
 				}
 			}
 		}
@@ -192,10 +215,15 @@ func TestPopulateDatabase(t *testing.T) {
 
 	t.Run("verify link search", func(t *testing.T) {
 		// Search for "documentation" should return multiple results for Bob
-		links, err := users["bob"].client.SearchLinks(client.SearchParams{Query: "documentation"})
+		q := "documentation"
+		resp, err := users["bob"].client.GetLinksWithResponse(ctx, &client.GetLinksParams{Q: &q}, users["bob"].withAuth())
 		if err != nil {
 			t.Fatalf("Failed to search links: %v", err)
 		}
+		if resp.StatusCode() != http.StatusOK {
+			t.Fatalf("Expected 200, got %d", resp.StatusCode())
+		}
+		links := *resp.JSON200
 		if len(links) == 0 {
 			t.Error("Expected some links with 'documentation' in title")
 		}
@@ -204,16 +232,20 @@ func TestPopulateDatabase(t *testing.T) {
 	t.Run("verify tag filtering", func(t *testing.T) {
 		// Note: Tag filtering has a known bug with ambiguous column name in SQLite.
 		// We verify tags exist via ListGroupTags instead.
-		tags, err := users["bob"].client.ListGroupTags(backendGroup.ID)
+		resp, err := users["bob"].client.GetGroupsIdTagsWithResponse(ctx, *backendGroup.Id, users["bob"].withAuth())
 		if err != nil {
 			t.Fatalf("Failed to list group tags: %v", err)
 		}
+		if resp.StatusCode() != http.StatusOK {
+			t.Fatalf("Expected 200, got %d", resp.StatusCode())
+		}
+		tags := *resp.JSON200
 		goTagFound := false
 		for _, tag := range tags {
-			if tag.Name == "go" {
+			if tag.Name != nil && *tag.Name == "go" {
 				goTagFound = true
-				if tag.LinkCount < 3 {
-					t.Errorf("Expected at least 3 links with 'go' tag in backend group, got %d", tag.LinkCount)
+				if tag.LinkCount != nil && *tag.LinkCount < 3 {
+					t.Errorf("Expected at least 3 links with 'go' tag in backend group, got %d", *tag.LinkCount)
 				}
 			}
 		}
@@ -224,36 +256,41 @@ func TestPopulateDatabase(t *testing.T) {
 
 	t.Run("verify cross-org isolation", func(t *testing.T) {
 		// Bob (Acme) should not see Greenfield's links
-		links, err := users["bob"].client.SearchLinks(client.SearchParams{Query: "mailchimp"})
+		q := "mailchimp"
+		resp, err := users["bob"].client.GetLinksWithResponse(ctx, &client.GetLinksParams{Q: &q}, users["bob"].withAuth())
 		if err != nil {
 			t.Fatalf("Failed to search links: %v", err)
 		}
-		if len(links) != 0 {
+		if len(*resp.JSON200) != 0 {
 			t.Error("Bob should not see Greenfield's Mailchimp link")
 		}
 
 		// Emma (Greenfield) should see it
-		links, err = users["emma"].client.SearchLinks(client.SearchParams{Query: "mailchimp"})
+		resp, err = users["emma"].client.GetLinksWithResponse(ctx, &client.GetLinksParams{Q: &q}, users["emma"].withAuth())
 		if err != nil {
 			t.Fatalf("Failed to search links: %v", err)
 		}
-		if len(links) != 1 {
-			t.Errorf("Emma should see 1 Mailchimp link, got %d", len(links))
+		if len(*resp.JSON200) != 1 {
+			t.Errorf("Emma should see 1 Mailchimp link, got %d", len(*resp.JSON200))
 		}
 	})
 
 	t.Run("verify tag listing", func(t *testing.T) {
 		// Henry should see ML-related tags
-		tags, err := users["henry"].client.ListTags()
+		resp, err := users["henry"].client.GetTagsWithResponse(ctx, users["henry"].withAuth())
 		if err != nil {
 			t.Fatalf("Failed to list tags: %v", err)
 		}
+		if resp.StatusCode() != http.StatusOK {
+			t.Fatalf("Expected 200, got %d", resp.StatusCode())
+		}
+		tags := *resp.JSON200
 		mlFound := false
 		for _, tag := range tags {
-			if tag.Name == "ml" {
+			if tag.Name != nil && *tag.Name == "ml" {
 				mlFound = true
-				if tag.LinkCount < 4 {
-					t.Errorf("Expected at least 4 links with 'ml' tag, got %d", tag.LinkCount)
+				if tag.LinkCount != nil && *tag.LinkCount < 4 {
+					t.Errorf("Expected at least 4 links with 'ml' tag, got %d", *tag.LinkCount)
 				}
 			}
 		}
@@ -265,73 +302,115 @@ func TestPopulateDatabase(t *testing.T) {
 
 // Helper functions
 
-func registerUser(t *testing.T, baseURL, email, name string, server *httptest.Server) *userClient {
+func registerUser(t *testing.T, ctx context.Context, baseURL, email, name string) *userClient {
 	t.Helper()
-	c := client.New(baseURL, server.Client())
-	resp, err := c.Register(email, "password123", name)
+	c, err := client.NewClientWithResponses(baseURL)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+
+	resp, err := c.PostAuthRegisterWithResponse(ctx, client.PostAuthRegisterJSONRequestBody{
+		Email:    email,
+		Password: "password123",
+		Name:     name,
+	})
 	if err != nil {
 		t.Fatalf("Failed to register %s: %v", email, err)
 	}
+	if resp.StatusCode() != http.StatusCreated {
+		t.Fatalf("Failed to register %s: %d", email, resp.StatusCode())
+	}
+
 	return &userClient{
 		email:  email,
 		name:   name,
 		client: c,
-		userID: resp.User.ID,
+		token:  *resp.JSON201.Token,
+		userID: *resp.JSON201.User.Id,
 	}
 }
 
-func createOrg(t *testing.T, c *client.Client, name, slug string) *client.OrgResponse {
+func createOrg(t *testing.T, ctx context.Context, u *userClient, name, slug string) *client.OrganizationsOrgResponse {
 	t.Helper()
-	org, err := c.CreateOrganization(name, slug)
+	resp, err := u.client.PostOrganizationsWithResponse(ctx, client.PostOrganizationsJSONRequestBody{
+		Name: name,
+		Slug: slug,
+	}, u.withAuth())
 	if err != nil {
 		t.Fatalf("Failed to create organization %s: %v", name, err)
 	}
-	return org
+	if resp.StatusCode() != http.StatusCreated {
+		t.Fatalf("Failed to create organization %s: %d", name, resp.StatusCode())
+	}
+	return resp.JSON201
 }
 
-func addOrgMember(t *testing.T, c *client.Client, orgID, email, role string) {
+func addOrgMember(t *testing.T, ctx context.Context, u *userClient, orgID, email, role string) {
 	t.Helper()
-	_, err := c.AddOrgMember(orgID, email, role)
+	resp, err := u.client.PostOrganizationsIdMembersWithResponse(ctx, orgID, client.PostOrganizationsIdMembersJSONRequestBody{
+		Email: email,
+		Role:  client.OrganizationsAddMemberRequestRole(role),
+	}, u.withAuth())
 	if err != nil {
 		t.Fatalf("Failed to add org member %s: %v", email, err)
 	}
+	if resp.StatusCode() != http.StatusCreated {
+		t.Fatalf("Failed to add org member %s: %d", email, resp.StatusCode())
+	}
 }
 
-func createGroup(t *testing.T, c *client.Client, name, description, orgID string) *client.GroupResponse {
+func createGroup(t *testing.T, ctx context.Context, u *userClient, name, description, orgID string) *client.GroupsGroupResponse {
 	t.Helper()
-	group, err := c.CreateGroup(client.CreateGroupRequest{
+	resp, err := u.client.PostGroupsWithResponse(ctx, client.PostGroupsJSONRequestBody{
 		Name:           name,
-		Description:    description,
-		OrganizationID: orgID,
-	})
+		Description:    &description,
+		OrganizationId: &orgID,
+	}, u.withAuth())
 	if err != nil {
 		t.Fatalf("Failed to create group %s: %v", name, err)
 	}
-	return group
+	if resp.StatusCode() != http.StatusCreated {
+		t.Fatalf("Failed to create group %s: %d", name, resp.StatusCode())
+	}
+	return resp.JSON201
 }
 
-func addGroupMember(t *testing.T, c *client.Client, groupID, email, role string) {
+func addGroupMember(t *testing.T, ctx context.Context, u *userClient, groupID, email, role string) {
 	t.Helper()
-	_, err := c.AddGroupMember(groupID, email, role)
+	resp, err := u.client.PostGroupsIdMembersWithResponse(ctx, groupID, client.PostGroupsIdMembersJSONRequestBody{
+		Email: email,
+		Role:  client.GroupsAddMemberRequestRole(role),
+	}, u.withAuth())
 	if err != nil {
 		t.Fatalf("Failed to add group member %s: %v", email, err)
 	}
+	if resp.StatusCode() != http.StatusCreated {
+		t.Fatalf("Failed to add group member %s: %d", email, resp.StatusCode())
+	}
 }
 
-func createLinkWithTags(t *testing.T, c *client.Client, groupID, url, slug, title string, tags []string) {
+func createLinkWithTags(t *testing.T, ctx context.Context, u *userClient, groupID, url, slug, title string, tags []string) {
 	t.Helper()
-	link, err := c.CreateLink(groupID, client.CreateLinkRequest{
-		URL:   url,
-		Slug:  slug,
-		Title: title,
-	})
+	resp, err := u.client.PostGroupsIdLinksWithResponse(ctx, groupID, client.PostGroupsIdLinksJSONRequestBody{
+		Url:   url,
+		Slug:  &slug,
+		Title: &title,
+	}, u.withAuth())
 	if err != nil {
 		t.Fatalf("Failed to create link %s: %v", slug, err)
 	}
+	if resp.StatusCode() != http.StatusCreated {
+		t.Fatalf("Failed to create link %s: %d", slug, resp.StatusCode())
+	}
 	if len(tags) > 0 {
-		_, err = c.SetLinkTags(link.Slug, tags)
+		tagResp, err := u.client.PutLinksSlugTagsWithResponse(ctx, *resp.JSON201.Slug, client.PutLinksSlugTagsJSONRequestBody{
+			Tags: tags,
+		}, u.withAuth())
 		if err != nil {
 			t.Fatalf("Failed to set tags on %s: %v", slug, err)
+		}
+		if tagResp.StatusCode() != http.StatusOK {
+			t.Fatalf("Failed to set tags on %s: %d", slug, tagResp.StatusCode())
 		}
 	}
 }

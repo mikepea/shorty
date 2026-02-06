@@ -28,6 +28,15 @@ type UpdateMemberRequest struct {
 }
 
 // ListMembers returns all members of a group
+// @Summary List group members
+// @Description Get all members of a group
+// @Tags groups
+// @Produce json
+// @Param id path string true "Group ID"
+// @Success 200 {array} MemberResponse
+// @Failure 404 {object} map[string]string "Group not found"
+// @Security BearerAuth
+// @Router /groups/{id}/members [get]
 func (h *Handler) ListMembers(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	groupID := c.Param("id")
@@ -58,6 +67,20 @@ func (h *Handler) ListMembers(c *gin.Context) {
 }
 
 // AddMember adds a user to a group (admin only)
+// @Summary Add group member
+// @Description Add a user to a group (requires admin role)
+// @Tags groups
+// @Accept json
+// @Produce json
+// @Param id path string true "Group ID"
+// @Param request body AddMemberRequest true "Member details"
+// @Success 201 {object} MemberResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 403 {object} map[string]string "Admin access required"
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 409 {object} map[string]string "User is already a member"
+// @Security BearerAuth
+// @Router /groups/{id}/members [post]
 func (h *Handler) AddMember(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	groupID := c.Param("id")
@@ -109,6 +132,20 @@ func (h *Handler) AddMember(c *gin.Context) {
 }
 
 // UpdateMember updates a member's role (admin only)
+// @Summary Update group member
+// @Description Update a member's role in a group (requires admin role)
+// @Tags groups
+// @Accept json
+// @Produce json
+// @Param id path string true "Group ID"
+// @Param userId path string true "User ID"
+// @Param request body UpdateMemberRequest true "Updated member details"
+// @Success 200 {object} MemberResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 403 {object} map[string]string "Admin access required"
+// @Failure 404 {object} map[string]string "Member not found"
+// @Security BearerAuth
+// @Router /groups/{id}/members/{userId} [put]
 func (h *Handler) UpdateMember(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	groupID := c.Param("id")
@@ -149,6 +186,17 @@ func (h *Handler) UpdateMember(c *gin.Context) {
 }
 
 // RemoveMember removes a user from a group (admin only)
+// @Summary Remove group member
+// @Description Remove a member from a group (requires admin role)
+// @Tags groups
+// @Produce json
+// @Param id path string true "Group ID"
+// @Param userId path string true "User ID"
+// @Success 200 {object} map[string]string "Member removed"
+// @Failure 403 {object} map[string]string "Admin access required"
+// @Failure 404 {object} map[string]string "Member not found"
+// @Security BearerAuth
+// @Router /groups/{id}/members/{userId} [delete]
 func (h *Handler) RemoveMember(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	groupID := c.Param("id")
