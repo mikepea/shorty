@@ -168,7 +168,7 @@ func (h *Handler) checkGroupMembership(userID, groupID string) error {
 // @Description Get all links belonging to a specific group
 // @Tags links
 // @Produce json
-// @Param id path int true "Group ID"
+// @Param id path string true "Group ID"
 // @Param is_unread query bool false "Filter by unread status"
 // @Param is_public query bool false "Filter by public status"
 // @Success 200 {array} LinkResponse
@@ -216,7 +216,7 @@ func (h *Handler) ListByGroup(c *gin.Context) {
 // @Tags links
 // @Accept json
 // @Produce json
-// @Param id path int true "Group ID"
+// @Param id path string true "Group ID"
 // @Param request body CreateLinkRequest true "Link details"
 // @Success 201 {object} LinkResponse
 // @Failure 400 {object} map[string]string "Validation error"
@@ -419,7 +419,7 @@ func (h *Handler) Delete(c *gin.Context) {
 // @Param q query string false "Search query (searches title, description, URL)"
 // @Param is_unread query bool false "Filter by unread status"
 // @Param is_public query bool false "Filter by public status"
-// @Param group_id query int false "Filter by group ID"
+// @Param group_id query string false "Filter by group ID"
 // @Param tag query string false "Filter by tag name"
 // @Param limit query int false "Max results (default 50, max 100)"
 // @Param offset query int false "Offset for pagination"

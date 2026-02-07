@@ -80,10 +80,20 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
-      - name: Install swag
-        run: go install github.com/swaggo/swag/cmd/swag@v1.16.4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Check generated files are up to date
+      - name: Install tools
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@v1.16.4
+          go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.5.1
+
+      - name: Generate clients
+        run: make generate-clients
+
+      - name: Check generated swagger files are up to date
         run: make check-generate
 
       - name: Build

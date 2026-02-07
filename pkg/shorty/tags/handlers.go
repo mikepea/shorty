@@ -55,6 +55,13 @@ func (h *Handler) checkGroupMembership(userID string, groupID string) error {
 }
 
 // List returns all tags used across the user's groups
+// @Summary List tags
+// @Description Get all tags used across the user's groups
+// @Tags tags
+// @Produce json
+// @Success 200 {array} TagResponse
+// @Security BearerAuth
+// @Router /tags [get]
 func (h *Handler) List(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 
@@ -104,6 +111,15 @@ func (h *Handler) List(c *gin.Context) {
 }
 
 // ListByGroup returns all tags used in a specific group
+// @Summary List tags in a group
+// @Description Get all tags used in a specific group
+// @Tags tags
+// @Produce json
+// @Param id path string true "Group ID"
+// @Success 200 {array} TagResponse
+// @Failure 404 {object} map[string]string "Group not found"
+// @Security BearerAuth
+// @Router /groups/{id}/tags [get]
 func (h *Handler) ListByGroup(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	groupID := c.Param("id")
@@ -148,6 +164,15 @@ func (h *Handler) ListByGroup(c *gin.Context) {
 }
 
 // GetLinkTags returns tags for a specific link
+// @Summary Get link tags
+// @Description Get all tags for a specific link
+// @Tags tags
+// @Produce json
+// @Param slug path string true "Link slug"
+// @Success 200 {array} TagResponse
+// @Failure 404 {object} map[string]string "Link not found"
+// @Security BearerAuth
+// @Router /links/{slug}/tags [get]
 func (h *Handler) GetLinkTags(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	slug := c.Param("slug")
@@ -178,6 +203,18 @@ func (h *Handler) GetLinkTags(c *gin.Context) {
 }
 
 // SetLinkTags sets the tags for a link (replaces existing tags)
+// @Summary Set link tags
+// @Description Replace all tags on a link
+// @Tags tags
+// @Accept json
+// @Produce json
+// @Param slug path string true "Link slug"
+// @Param request body SetTagsRequest true "Tags to set"
+// @Success 200 {array} TagResponse
+// @Failure 400 {object} map[string]string "Validation error"
+// @Failure 404 {object} map[string]string "Link not found"
+// @Security BearerAuth
+// @Router /links/{slug}/tags [put]
 func (h *Handler) SetLinkTags(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	slug := c.Param("slug")
@@ -239,6 +276,16 @@ func (h *Handler) SetLinkTags(c *gin.Context) {
 }
 
 // AddLinkTag adds a single tag to a link
+// @Summary Add tag to link
+// @Description Add a single tag to a link
+// @Tags tags
+// @Produce json
+// @Param slug path string true "Link slug"
+// @Param tag path string true "Tag name"
+// @Success 200 {object} TagResponse
+// @Failure 404 {object} map[string]string "Link not found"
+// @Security BearerAuth
+// @Router /links/{slug}/tags/{tag} [post]
 func (h *Handler) AddLinkTag(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	slug := c.Param("slug")
@@ -279,6 +326,16 @@ func (h *Handler) AddLinkTag(c *gin.Context) {
 }
 
 // RemoveLinkTag removes a tag from a link
+// @Summary Remove tag from link
+// @Description Remove a tag from a link
+// @Tags tags
+// @Produce json
+// @Param slug path string true "Link slug"
+// @Param tag path string true "Tag name"
+// @Success 200 {object} map[string]string "Tag removed"
+// @Failure 404 {object} map[string]string "Link or tag not found"
+// @Security BearerAuth
+// @Router /links/{slug}/tags/{tag} [delete]
 func (h *Handler) RemoveLinkTag(c *gin.Context) {
 	userID, _ := auth.GetUserID(c)
 	slug := c.Param("slug")
