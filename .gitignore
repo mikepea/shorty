@@ -45,3 +45,10 @@ build/
 
 # Node modules (for web/)
 node_modules/
+
+# Generated client libraries
+clients/go/
+clients/python/
+
+# Generated OpenAPI 3.0 spec (converted from Swagger 2.0)
+api/swagger/openapi3.yaml
