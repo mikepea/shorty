@@ -162,6 +162,29 @@ func AllModels() []interface{} {
 
 3. **The migration runs automatically** on server startup.
 
+## Client Generation
+
+The Go API client is auto-generated from the OpenAPI spec and is **not checked into git**. You must generate it before building or testing:
+
+```bash
+# Generate everything (swagger docs + clients)
+make generate
+
+# Or just the clients
+make generate-clients
+```
+
+This runs `scripts/generate-clients.sh`, which:
+1. Runs `swag init` to generate Swagger 2.0 docs from Go annotations
+2. Converts Swagger 2.0 → OpenAPI 3.0 using `swagger2openapi` (via npx)
+3. Runs `oapi-codegen` to generate the Go client at `clients/go/client/`
+
+### Prerequisites
+
+- `swag` — installed via `make tools`
+- `oapi-codegen` — installed via `make tools`
+- Node.js/npm — for `npx swagger2openapi`
+
 ## API Documentation
 
 ### Swagger Annotations

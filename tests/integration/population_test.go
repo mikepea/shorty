@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mikepea/shorty/pkg/shorty/client"
+	"github.com/mikepea/shorty/clients/go/client"
 )
 
 // userClient tracks a user's client and their info.
